@@ -1,0 +1,139 @@
+---
+
+default:
+  image: rust:latest
+  cache:
+    key: $CI_JOB_NAME
+    paths:
+      - .cargo
+      - target
+
+include:
+  - template: Code-Quality.gitlab-ci.yml
+  - template: Security/License-Scanning.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+code_quality:
+  stage: qa
+  needs: []
+
+license_scanning:
+  stage: qa
+  needs: []
+
+sast:
+  stage: security
+  needs: []
+
+secret_detection:
+  stage: security
+  needs: []
+
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/.cargo
+  CI_RUST_CHANNEL: stable
+
+.build_template: &build_template
+  stage: build
+  before_script:
+    - rustc --version
+    - cargo --version
+  script:
+    - cargo build --all-features --verbose
+
+.test_template: &test_template
+  stage: test
+  before_script:
+    - rustc --version
+    - cargo --version
+  script:
+    - cargo test --all-features --verbose
+
+stages:
+  - build
+  - test
+  - qa
+  - security
+  - deploy
+
+build stable:
+  <<: *build_template
+
+build nightly:
+  <<: *build_template
+  image: rustlang/rust:nightly
+  variables:
+    CI_RUST_CHANNEL: nightly
+
+test stable:
+  <<: *test_template
+  needs:
+    - build stable
+
+test nightly:
+  <<: *test_template
+  image: rustlang/rust:nightly
+  needs:
+    - build nightly
+  variables:
+    CI_RUST_CHANNEL: nightly
+
+coverage:
+  stage: qa
+  needs:
+    - build stable
+  before_script:
+    - cargo install cargo-tarpaulin
+  script:
+    - cargo tarpaulin --all-features --out=Xml --out=Html --output-dir=coverage
+  after_script:
+    - mv coverage/tarpaulin-report.html coverage/index.html
+  artifacts:
+    paths:
+      - coverage/
+    reports:
+      cobertura: coverage/cobertura.xml
+  coverage: '/(\d+\.\d+)% coverage/'
+
+lint:
+  stage: qa
+  needs: []
+  script:
+    - rustup component add clippy
+    - cargo clippy --all-features -- -D warnings
+
+fmt:
+  stage: qa
+  needs: []
+  script:
+    - rustup component add rustfmt
+    - cargo fmt -- --check
+
+audit:
+  stage: qa
+  needs: []
+  script:
+    - cargo install cargo-audit
+    - cargo audit -D warnings
+
+binary:
+  stage: deploy
+  script:
+    - cargo build --release --locked --verbose
+  artifacts:
+    paths:
+      - target/release/s3ers
+
+pages:
+  stage: deploy
+  script:
+    - cargo rustdoc --all-features
+  after_script:
+    - mkdir -p public
+    - cp -R target/doc/* public/
+  artifacts:
+    paths:
+    - public
+  only:
+    - master
