@@ -1,12 +1,21 @@
 ---
 
 default:
-  image: rust:latest
+  image: rust:1.57.0
   cache:
     key: $CI_JOB_NAME
     paths:
       - .cargo
       - target
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/.cargo
+
+stages:
+  - build
+  - test
+  - qa
+  - security
+  - deploy
 
 include:
   - template: Code-Quality.gitlab-ci.yml
@@ -30,11 +39,7 @@ secret_detection:
   stage: security
   needs: []
 
-variables:
-  CARGO_HOME: $CI_PROJECT_DIR/.cargo
-  CI_RUST_CHANNEL: stable
-
-.build_template: &build_template
+build:
   stage: build
   before_script:
     - rustc --version
@@ -42,53 +47,23 @@ variables:
   script:
     - cargo build --all-features --verbose
 
-.test_template: &test_template
+test:
   stage: test
   before_script:
     - rustc --version
     - cargo --version
   script:
     - cargo test --all-features --verbose
-
-stages:
-  - build
-  - test
-  - qa
-  - security
-  - deploy
-
-build stable:
-  <<: *build_template
-
-build nightly:
-  <<: *build_template
-  image: rustlang/rust:nightly
-  variables:
-    CI_RUST_CHANNEL: nightly
-
-test stable:
-  <<: *test_template
-  needs:
-    - build stable
-
-test nightly:
-  <<: *test_template
-  image: rustlang/rust:nightly
-  needs:
-    - build nightly
-  variables:
-    CI_RUST_CHANNEL: nightly
+  needs: []
 
 coverage:
   stage: qa
   needs:
-    - build stable
+    - test
   before_script:
     - cargo install cargo-tarpaulin
   script:
     - cargo tarpaulin --all-features --out=Xml --out=Html --output-dir=coverage
-  after_script:
-    - mv coverage/tarpaulin-report.html coverage/index.html
   artifacts:
     paths:
       - coverage/
@@ -99,22 +74,27 @@ coverage:
 lint:
   stage: qa
   needs: []
-  script:
+  before_script:
     - rustup component add clippy
+  script:
     - cargo clippy --all-features -- -D warnings
 
 fmt:
   stage: qa
   needs: []
-  script:
+  before_script:
     - rustup component add rustfmt
+    - cargo install cargo-sort
+  script:
     - cargo fmt -- --check
+    - cargo sort --check
 
 audit:
   stage: qa
   needs: []
-  script:
+  before_script:
     - cargo install cargo-audit
+  script:
     - cargo audit -D warnings
 
 binary:
@@ -131,7 +111,7 @@ pages:
     - cargo rustdoc --all-features
   after_script:
     - mkdir -p public
-    - cp -R target/doc/* public/
+    - mv target/doc public
   artifacts:
     paths:
     - public

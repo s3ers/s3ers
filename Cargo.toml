@@ -1,11 +1,14 @@
 [package]
 name = "s3ers"
 version = "0.0.1"
+edition = "2021"
 authors = ["Marc 'risson' Schmitt <marc.schmitt@risson.space>", "Sevan 'Byh0ki' Murriguian-Watrin <murrig_s@epita.fr>"]
 repository = "https://gitlab.com/s3ers/s3ers"
 readme = "README.md"
 license-file = "LICENSE"
 publish = false # this is not ready yet
-edition = "2018"
 
 [dependencies]
+anyhow = "*"
+clap = { version = "*", features = ["derive"] }
+

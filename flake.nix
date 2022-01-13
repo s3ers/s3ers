@@ -1,10 +1,11 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    rust-overlay.url = "github:oxalica/rust-overlay";
     futils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, futils } @ inputs:
+  outputs = { self, nixpkgs, rust-overlay, futils } @ inputs:
     let
       inherit (nixpkgs) lib;
       inherit (lib) recursiveUpdate;
@@ -12,6 +13,9 @@
 
       nixpkgsFor = lib.genAttrs defaultSystems (system: import nixpkgs {
         inherit system;
+        overlays = [
+          rust-overlay.overlay
+        ];
       });
     in
     (eachDefaultSystem (system:
@@ -20,16 +24,15 @@
       in
       {
         devShell = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [
-            cargo
-            gcc
-          ];
           buildInputs = with pkgs; [
-            clippy
+            rust-bin.stable."1.57.0".default
             cargo-audit
+            cargo-edit
+            cargo-flamegraph
+            cargo-sort
             cargo-tarpaulin
             git
-            rustfmt
+            pre-commit
           ];
 
           RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
