@@ -73,7 +73,7 @@ impl Response {
             });
 
             quote! {
-                #s3ers_serde::json_to_buf(&ResponseBody { #(#fields)* })?
+                #s3ers_serde::xml_to_buf(&ResponseBody { #(#fields)* })?
             }
         };
 

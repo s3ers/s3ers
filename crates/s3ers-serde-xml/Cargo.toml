@@ -3,12 +3,10 @@ authors = [
     "Marc 'risson' Schmitt <marc.schmitt@risson.space>",
     "Sevan 'Byh0ki' Murriguian-Watrin <murrig_s@epita.fr>",
 ]
-categories = ["api-bindings", "filesystem", "web-programming"]
-description = "An S3 library."
+description = "Wrapper around quick-xml for other s3ers crates."
 homepage = "https://gitlab.com/s3ers/s3ers"
-keywords = ["aws", "s3"]
 license-file = "../../LICENSE"
-name = "s3ers-api"
+name = "s3ers-serde-xml"
 publish = false # this is not ready yet
 readme = "../../README.md"
 repository = "https://gitlab.com/s3ers/s3ers"
@@ -20,19 +18,9 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["client", "server"]
-client = []
-server = []
 
 [dependencies]
-bytes = "1.1.0"
-http = "0.2.6"
-percent-encoding = "2.1.0"
-quick-xml = { version = "0.23.0-alpha3", features = ["serialize"] }
-s3ers-api-macros = { path = "../s3ers-api-macros", version = "0.0.1" }
-s3ers-serde = { path = "../s3ers-serde", version = "0.0.1" }
+quick-xml = { version = "0.22.0", features = ["serialize"] }
 serde = { version = "1.0.133", features = ["derive"] }
-thiserror = "1.0.30"
 
 [dev-dependencies]
-trybuild = "1.0.54"

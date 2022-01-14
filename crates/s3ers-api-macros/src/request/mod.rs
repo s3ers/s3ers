@@ -365,7 +365,7 @@ enum RequestField {
     /// Data that appears in the query string as dynamic key-value pairs.
     QueryMap(Field),
 
-    /// JSON data in the body of the request.
+    /// XML data in the body of the request.
     Body(Field),
 
     /// A specific data type in the body of the request.

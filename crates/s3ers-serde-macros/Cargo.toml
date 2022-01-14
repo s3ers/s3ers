@@ -3,12 +3,10 @@ authors = [
     "Marc 'risson' Schmitt <marc.schmitt@risson.space>",
     "Sevan 'Byh0ki' Murriguian-Watrin <murrig_s@epita.fr>",
 ]
-categories = ["api-bindings", "filesystem", "web-programming"]
-description = "A procedural macro for generating s3ers-api Endpoints."
+description = "Procedural macros for s3ers-serde."
 homepage = "https://gitlab.com/s3ers/s3ers"
-keywords = ["aws", "s3"]
 license-file = "../../LICENSE"
-name = "s3ers-api-macros"
+name = "s3ers-serde-macros"
 publish = false # this is not ready yet
 readme = "../../README.md"
 repository = "https://gitlab.com/s3ers/s3ers"
