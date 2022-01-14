@@ -61,7 +61,7 @@ impl Request {
                 .as_ref()
                 .expect("expected field to have identifier");
 
-            quote! {
+            quote! {{
                 // This function exists so that the compiler will throw an error when the type of
                 // the field with the query_map attribute doesn't implement `IntoIterator<Item =
                 // (String, String)>`.
@@ -83,20 +83,20 @@ impl Request {
                 assert_trait_impl(&request_query.0);
 
                 format_args!("?{}", #s3ers_serde::urlencoded::to_string(request_query)?)
-            }
+            }}
         } else if self.has_query_fields() {
             let request_query_init_fields = struct_init_fields(
                 self.fields.iter().filter_map(RequestField::as_query_field),
                 quote! { self },
             );
 
-            quote! {
+            quote! {{
                 let request_query = RequestQuery {
                     #request_query_init_fields
                 };
 
                 format_args!("?{}", #s3ers_serde::urlencoded::to_string(request_query)?)
-            }
+            }}
         } else {
             quote! { "" }
         };

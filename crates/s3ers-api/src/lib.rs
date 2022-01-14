@@ -323,10 +323,10 @@ pub trait EndpointError:
 }
 
 /// Marker trait for requests that don't require authentication, for the client side.
-pub trait OutgoingNonAuthRequest: OutgoingRequest {}
+pub trait OutgoingNoneAuthRequest: OutgoingRequest {}
 
 /// Marker trait for requests that don't require authentication, for the server side.
-pub trait IncomingNonAuthRequest: IncomingRequest {}
+pub trait IncomingNoneAuthRequest: IncomingRequest {}
 
 /// Authentication scheme used by the endpoint.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

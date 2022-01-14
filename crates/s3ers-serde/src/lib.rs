@@ -16,3 +16,17 @@ impl fmt::Display for XmlValue {
         fmt::Display::fmt("", f)
     }
 }
+
+/// A type that can be sent to another party that understands the s3 protocol.
+///
+/// If any of the fields of `Self` don't implement serde's `Deserialize`, you can derive this trait
+/// to generate a corresponding 'Incoming' type that supports deserialization. This is useful for
+/// things like s3ers_events' `EventResult` type. For more details, see the
+/// [derive macro's documentation][doc].
+///
+/// [doc]: derive.Outgoing.html
+// TODO: Better explain how this trait relates to serde's traits
+pub trait Outgoing {
+    /// The 'Incoming' variant of `Self`.
+    type Incoming;
+}
