@@ -2,7 +2,6 @@
 
 use s3ers_api::{
     s3ers_api, IncomingRequest as _, OutgoingRequest as _,
-    SendAccessToken,
 };
 
 s3ers_api! {
@@ -47,7 +46,7 @@ fn request_serde() {
 
     let http_req = req
         .clone()
-        .try_into_http_request::<Vec<u8>>("https://homeserver.tld", SendAccessToken::None)
+        .try_into_http_request::<Vec<u8>>("https://homeserver.tld")
         .unwrap();
     let req2 = Request::try_from_http_request(http_req).unwrap();
 
@@ -68,6 +67,6 @@ fn invalid_uri_should_not_panic() {
         bar: "barVal".to_owned(),
     };
 
-    let result = req.try_into_http_request::<Vec<u8>>("invalid uri", SendAccessToken::None);
+    let result = req.try_into_http_request::<Vec<u8>>("invalid uri");
     assert!(result.is_err());
 }

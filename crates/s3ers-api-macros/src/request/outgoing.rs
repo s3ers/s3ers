@@ -142,31 +142,6 @@ impl Request {
             }
         }));
 
-        header_kvs.extend(match self.authentication {
-            AuthScheme::AccessToken(_) => quote! {
-                req_headers.insert(
-                    #http::header::AUTHORIZATION,
-                    ::std::convert::TryFrom::<_>::try_from(::std::format!(
-                        "Bearer {}",
-                        access_token
-                            .get_required_for_endpoint()
-                            .ok_or(#s3ers_api::error::IntoHttpError::NeedsAuthentication)?,
-                    ))?,
-                );
-            },
-            AuthScheme::None(_) => quote! {
-                if let Some(access_token) = access_token.get_not_required_for_endpoint() {
-                    req_headers.insert(
-                        #http::header::AUTHORIZATION,
-                        ::std::convert::TryFrom::<_>::try_from(
-                            ::std::format!("Bearer {}", access_token),
-                        )?
-                    );
-                }
-            },
-            AuthScheme::QueryOnlyAccessToken(_) | AuthScheme::ServerSignatures(_) => quote! {},
-        });
-
         let request_body = if let Some(field) = self.raw_body_field() {
             let field_name = field.ident.as_ref().expect("expected field to have an identifier");
             quote! { #s3ers_serde::slice_to_buf(&self.#field_name) }
@@ -205,7 +180,6 @@ impl Request {
                 fn try_into_http_request<T: ::std::default::Default + #bytes::BufMut>(
                     self,
                     base_url: &::std::primitive::str,
-                    access_token: #s3ers_api::SendAccessToken<'_>,
                 ) -> ::std::result::Result<#http::Request<T>, #s3ers_api::error::IntoHttpError> {
                     let metadata = self::METADATA;
 

@@ -12,7 +12,7 @@ pub mod some_endpoint {
             path: "/_matrix/some/endpoint/:user",
 
             #[cfg(all())]
-            authentication: AccessToken,
+            authentication: AwsSignatureV4Header,
             #[cfg(any())]
             authentication: None,
         }

@@ -15,7 +15,7 @@ mod empty_response {
             method: PUT,
             name: "create_alias",
             path: "/_matrix/client/r0/directory/room/:room_alias",
-            authentication: AccessToken,
+            authentication: AwsSignatureV4Header,
         }
 
         request: {
@@ -40,7 +40,7 @@ mod nested_types {
             method: PUT,
             name: "create_alias",
             path: "/_matrix/client/r0/directory/room/:room_alias",
-            authentication: AccessToken,
+            authentication: AwsSignatureV4Header,
         }
 
         request: {

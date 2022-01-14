@@ -9,7 +9,7 @@ use http::{header::CONTENT_TYPE, method::Method};
 use s3ers_api::{
     error::{FromHttpRequestError, FromHttpResponseError, IntoHttpError, MatrixError, ServerError},
     AuthScheme, EndpointError, IncomingRequest, IncomingResponse, Metadata, OutgoingRequest,
-    OutgoingResponse, SendAccessToken,
+    OutgoingResponse,
 };
 use s3ers_serde::Outgoing;
 use serde::{Deserialize, Serialize};
@@ -42,7 +42,6 @@ impl OutgoingRequest for Request {
     fn try_into_http_request<T: Default + BufMut>(
         self,
         base_url: &str,
-        _access_token: SendAccessToken<'_>,
     ) -> Result<http::Request<T>, IntoHttpError> {
         let url = (base_url.to_owned() + METADATA.path)
             .replace(":room_alias", &self.room_alias.to_string());

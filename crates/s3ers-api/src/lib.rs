@@ -207,45 +207,6 @@ pub mod exports {
 
 use error::{FromHttpRequestError, FromHttpResponseError, IntoHttpError};
 
-/// An enum to control whether an access token should be added to outgoing requests
-#[derive(Clone, Copy, Debug)]
-#[allow(clippy::exhaustive_enums)]
-pub enum SendAccessToken<'a> {
-    /// Add the given access token to the request only if the `METADATA` on the request requires
-    /// it.
-    IfRequired(&'a str),
-
-    /// Always add the access token.
-    Always(&'a str),
-
-    /// Don't add an access token.
-    ///
-    /// This will lead to an error if the request endpoint requires authentication
-    None,
-}
-
-impl<'a> SendAccessToken<'a> {
-    /// Get the access token for an endpoint that requires one.
-    ///
-    /// Returns `Some(_)` if `self` contains an access token.
-    pub fn get_required_for_endpoint(self) -> Option<&'a str> {
-        match self {
-            Self::IfRequired(tok) | Self::Always(tok) => Some(tok),
-            Self::None => None,
-        }
-    }
-
-    /// Get the access token for an endpoint that should not require one.
-    ///
-    /// Returns `Some(_)` only if `self` is `SendAccessToken::Always(_)`.
-    pub fn get_not_required_for_endpoint(self) -> Option<&'a str> {
-        match self {
-            Self::Always(tok) => Some(tok),
-            Self::IfRequired(_) | Self::None => None,
-        }
-    }
-}
-
 /// A request type for a Matrix API endpoint, used for sending requests.
 pub trait OutgoingRequest: Sized {
     /// A type capturing the expected error conditions the server can return.
@@ -268,7 +229,6 @@ pub trait OutgoingRequest: Sized {
     fn try_into_http_request<T: Default + BufMut>(
         self,
         base_url: &str,
-        access_token: SendAccessToken<'_>,
     ) -> Result<http::Request<T>, IntoHttpError>;
 }
 
@@ -335,18 +295,15 @@ pub enum AuthScheme {
     /// No authentication is performed.
     None,
 
-    /// Authentication is performed by including an access token in the `Authentication` http
-    /// header, or an `access_token` query parameter.
+    /// Authentication is performed by including an access token in the `Credential` http
+    /// header.
     ///
     /// It is recommended to use the header over the query parameter.
-    AccessToken,
+    AwsSignatureV4Header,
 
-    /// Authentication is performed by including X-Matrix signatures in the request headers,
-    /// as defined in the federation API.
-    ServerSignatures,
+    /// Authentication is performed by setting the `X-Amz-Credential` query parameter.
+    AwsSignatureV4QueryParams,
 
-    /// Authentication is performed by setting the `access_token` query parameter.
-    QueryOnlyAccessToken,
 }
 
 /// Metadata about an API endpoint.

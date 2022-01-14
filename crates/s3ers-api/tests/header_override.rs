@@ -1,7 +1,7 @@
 #![allow(clippy::exhaustive_structs)]
 
 use http::header::{Entry, CONTENT_TYPE};
-use s3ers_api::{s3ers_api, OutgoingRequest as _, OutgoingResponse as _, SendAccessToken};
+use s3ers_api::{s3ers_api, OutgoingRequest as _, OutgoingResponse as _};
 
 s3ers_api! {
     metadata: {
@@ -47,7 +47,7 @@ fn response_content_type_override() {
 fn request_content_type_override() {
     let req = Request { location: None, stuff: "magic".into() };
     let mut http_req = req
-        .try_into_http_request::<Vec<u8>>("https://homeserver.tld", SendAccessToken::None)
+        .try_into_http_request::<Vec<u8>>("https://homeserver.tld")
         .unwrap();
 
     assert_eq!(
