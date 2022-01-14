@@ -2,15 +2,13 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{
-    punctuated::Punctuated, spanned::Spanned, Attribute, Field, Ident, Token,
-};
+use syn::{punctuated::Punctuated, spanned::Spanned, Attribute, Field, Ident, Token};
 
 use super::{kw, metadata::Metadata};
 
 /// The result of processing the `response` section of the macro.
 pub(crate) struct Response {
-    /// The `response` keyword.
+    /// The `response` keyword
     pub(super) response_kw: kw::response,
 
     /// The attributes that will be applied to the struct definition.
@@ -30,16 +28,12 @@ impl Response {
         let s3ers_api_macros = quote! { #s3ers_api::exports::s3ers_api_macros };
         let s3ers_serde = quote! { #s3ers_api::exports::s3ers_serde };
 
-        let docs = format!(
-            "Data in the response from the `{}` API endpoint.",
-            metadata.name.value()
-        );
+        let docs =
+            format!("Data in the response from the `{}` API endpoint.", metadata.name.value());
+        let struct_attributes = &self.attributes;
 
         let response_ident = Ident::new("Response", self.response_kw.span());
-
-        let struct_attributes = &self.attributes;
         let fields = &self.fields;
-
         quote! {
             #[doc = #docs]
             #[derive(
@@ -50,7 +44,7 @@ impl Response {
                 #s3ers_serde::_FakeDeriveSerde,
             )]
             #[cfg_attr(not(feature = "unstable-exhaustive-types"), non_exhaustive)]
-            #[incoming_derive(!Deserialize, #s3ers_api_macros::_FakeDeriveS3ersApi)]
+            #[incoming_derive(!Deserialize, #s3ers_api_macros::_FakeDeriveS3ers)]
             #[s3ers_api(error_ty = #error_ty)]
             #( #struct_attributes )*
             pub struct #response_ident {

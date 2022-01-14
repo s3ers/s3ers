@@ -1,62 +1,56 @@
 //! This module contains types for all kinds of errors that can occur when
 //! converting between http requests / responses and s3ers's representation of
-//! S3 API requests / responses.
+//! matrix API requests / responses.
 
 use std::{error::Error as StdError, fmt};
 
 use bytes::BufMut;
-use http;
-use quick_xml::de::from_slice as from_xml_slice;
-use s3ers_serde::XmlValue;
+use serde_json::{from_slice as from_json_slice, Value as JsonValue};
 use thiserror::Error;
 
 use crate::{EndpointError, OutgoingResponse};
 
-// TODO: prevent users from using this.
-// The problem is that we can't easily make a generic error type. Maybe we can
-// keep this, but set body to `String`.
-
-/// A general-purpose S3 error type consisting of an HTTP status code and a XML body.
+/// A general-purpose Matrix error type consisting of an HTTP status code and a JSON body.
 ///
 /// Note that individual `s3ers-*-api` crates may provide more specific error types.
 #[allow(clippy::exhaustive_structs)]
 #[derive(Clone, Debug)]
-pub struct S3Error {
+pub struct MatrixError {
     /// The http response's status code.
     pub status_code: http::StatusCode,
 
     /// The http response's body.
-    pub body: XmlValue,
+    pub body: JsonValue,
 }
 
-impl fmt::Display for S3Error {
+impl fmt::Display for MatrixError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] ", self.status_code.as_u16())?;
         fmt::Display::fmt(&self.body, f)
     }
 }
 
-impl StdError for S3Error {}
+impl StdError for MatrixError {}
 
-impl OutgoingResponse for S3Error {
+impl OutgoingResponse for MatrixError {
     fn try_into_http_response<T: Default + BufMut>(
         self,
     ) -> Result<http::Response<T>, IntoHttpError> {
         http::Response::builder()
-            .header(http::header::CONTENT_TYPE, "application/xml")
+            .header(http::header::CONTENT_TYPE, "application/json")
             .status(self.status_code)
-            .body(s3ers_serde::xml_to_buf(&self.body).expect("TODO"))
+            .body(s3ers_serde::json_to_buf(&self.body)?)
             .map_err(Into::into)
     }
 }
 
-impl EndpointError for S3Error {
+impl EndpointError for MatrixError {
     fn try_from_http_response<T: AsRef<[u8]>>(
         response: http::Response<T>,
     ) -> Result<Self, DeserializationError> {
         Ok(Self {
             status_code: response.status(),
-            body: from_xml_slice(response.body().as_ref()).expect("TODO"),
+            body: from_json_slice(response.body().as_ref())?,
         })
     }
 }
@@ -73,9 +67,9 @@ pub enum IntoHttpError {
     )]
     NeedsAuthentication,
 
-    /// XML serialization failed.
-    #[error("XML serialization failed: {0}")]
-    Xml(#[from] quick_xml::Error),
+    /// JSON serialization failed.
+    #[error("JSON serialization failed: {0}")]
+    Json(#[from] serde_json::Error),
 
     /// Query parameter serialization failed.
     #[error("Query parameter serialization failed: {0}")]
@@ -131,12 +125,8 @@ pub enum FromHttpResponseError<E> {
 impl<E: fmt::Display> fmt::Display for FromHttpResponseError<E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Deserialization(err) => {
-                write!(f, "deserialization failed: {}", err)
-            }
-            Self::Http(err) => {
-                write!(f, "the server returned an error: {}", err)
-            }
+            Self::Deserialization(err) => write!(f, "deserialization failed: {}", err),
+            Self::Http(err) => write!(f, "the server returned an error: {}", err),
         }
     }
 }
@@ -190,18 +180,18 @@ pub enum DeserializationError {
     #[error("{0}")]
     Utf8(#[from] std::str::Utf8Error),
 
-    /// XML deserialization failed.
+    /// JSON deserialization failed.
     #[error("{0}")]
-    Xml(#[from] quick_xml::Error),
+    Json(#[from] serde_json::Error),
 
     /// Query parameter deserialization failed.
     #[error("{0}")]
     Query(#[from] s3ers_serde::urlencoded::de::Error),
 
-    // TODO
-    // Got an invalid identifier.
-    // #[error("{0}")]
-    // Ident(#[from] s3ers_identifiers::Error),
+    /// Got an invalid identifier.
+    #[error("{0}")]
+    Ident(#[from] s3ers_identifiers::Error),
+
     /// Header value deserialization failed.
     #[error("{0}")]
     Header(#[from] HeaderDeserializationError),

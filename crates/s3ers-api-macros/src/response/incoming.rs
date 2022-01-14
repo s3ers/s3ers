@@ -5,14 +5,10 @@ use syn::Type;
 use super::{Response, ResponseField};
 
 impl Response {
-    pub fn expand_incoming(
-        &self,
-        error_ty: &Type,
-        s3ers_api: &TokenStream,
-    ) -> TokenStream {
+    pub fn expand_incoming(&self, error_ty: &Type, s3ers_api: &TokenStream) -> TokenStream {
         let http = quote! { #s3ers_api::exports::http };
         let s3ers_serde = quote! { #s3ers_api::exports::s3ers_serde };
-        let serde_xml = quote! { #s3ers_api::exports::serde_xml };
+        let serde_json = quote! { #s3ers_api::exports::serde_json };
 
         let extract_response_headers = self.has_header_fields().then(|| {
             quote! {
@@ -30,11 +26,11 @@ impl Response {
                         response.body(),
                     );
 
-                    #serde_xml::from_slice(match body {
+                    #serde_json::from_slice(match body {
                         // If the response body is completely empty, pretend it is an empty
-                        // XML object instead. This allows responses with only optional body
+                        // JSON object instead. This allows responses with only optional body
                         // parameters to be deserialized in that case.
-                        [] => b"",
+                        [] => b"{}",
                         b => b,
                     })?
                 };
@@ -47,15 +43,10 @@ impl Response {
 
             for response_field in &self.fields {
                 let field = response_field.field();
-                let field_name = field
-                    .ident
-                    .as_ref()
-                    .expect("expected field to have an identifier");
-                let cfg_attrs = field
-                    .attrs
-                    .iter()
-                    .filter(|a| a.path.is_ident("cfg"))
-                    .collect::<Vec<_>>();
+                let field_name =
+                    field.ident.as_ref().expect("expected field to have an identifier");
+                let cfg_attrs =
+                    field.attrs.iter().filter(|a| a.path.is_ident("cfg")).collect::<Vec<_>>();
 
                 fields.push(match response_field {
                     ResponseField::Body(_) | ResponseField::NewtypeBody(_) => {

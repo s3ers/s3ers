@@ -9,10 +9,8 @@ pub fn slice_to_buf<B: Default + BufMut>(s: &[u8]) -> B {
 }
 
 /// Creates a buffer and writes a serializable value to it.
-pub fn xml_to_buf<B: Default + BufMut, T: Serialize>(
-    val: &T,
-) -> Result<B, quick_xml::de::DeError> {
+pub fn json_to_buf<B: Default + BufMut, T: Serialize>(val: &T) -> serde_json::Result<B> {
     let mut buf = B::default().writer();
-    quick_xml::se::to_writer(&mut buf, val)?;
+    serde_json::to_writer(&mut buf, val)?;
     Ok(buf.into_inner())
 }

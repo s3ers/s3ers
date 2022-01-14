@@ -3,16 +3,17 @@ use quote::ToTokens;
 use syn::parse::{Parse, ParseStream};
 
 mod kw {
-    use syn::custom_keyword;
-    custom_keyword!(None);
-    custom_keyword!(AwsSignatureV4Header);
-    custom_keyword!(AwsSignatureV4QueryParams);
+    syn::custom_keyword!(None);
+    syn::custom_keyword!(AccessToken);
+    syn::custom_keyword!(ServerSignatures);
+    syn::custom_keyword!(QueryOnlyAccessToken);
 }
 
 pub enum AuthScheme {
     None(kw::None),
-    AwsSignatureV4Header(kw::AwsSignatureV4Header),
-    AwsSignatureV4QueryParams(kw::AwsSignatureV4QueryParams),
+    AccessToken(kw::AccessToken),
+    ServerSignatures(kw::ServerSignatures),
+    QueryOnlyAccessToken(kw::QueryOnlyAccessToken),
 }
 
 impl Parse for AuthScheme {
@@ -21,10 +22,12 @@ impl Parse for AuthScheme {
 
         if lookahead.peek(kw::None) {
             input.parse().map(Self::None)
-        } else if lookahead.peek(kw::AwsSignatureV4Header) {
-            input.parse().map(Self::AwsSignatureV4Header)
-        } else if lookahead.peek(kw::AwsSignatureV4QueryParams) {
-            input.parse().map(Self::AwsSignatureV4QueryParams)
+        } else if lookahead.peek(kw::AccessToken) {
+            input.parse().map(Self::AccessToken)
+        } else if lookahead.peek(kw::ServerSignatures) {
+            input.parse().map(Self::ServerSignatures)
+        } else if lookahead.peek(kw::QueryOnlyAccessToken) {
+            input.parse().map(Self::QueryOnlyAccessToken)
         } else {
             Err(lookahead.error())
         }
@@ -34,9 +37,10 @@ impl Parse for AuthScheme {
 impl ToTokens for AuthScheme {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         match self {
-            Self::None(kw) => kw.to_tokens(tokens),
-            Self::AwsSignatureV4Header(kw) => kw.to_tokens(tokens),
-            Self::AwsSignatureV4QueryParams(kw) => kw.to_tokens(tokens),
+            AuthScheme::None(kw) => kw.to_tokens(tokens),
+            AuthScheme::AccessToken(kw) => kw.to_tokens(tokens),
+            AuthScheme::ServerSignatures(kw) => kw.to_tokens(tokens),
+            AuthScheme::QueryOnlyAccessToken(kw) => kw.to_tokens(tokens),
         }
     }
 }

@@ -4,23 +4,22 @@ use quote::ToTokens;
 use syn::{
     braced,
     parse::{Parse, ParseStream},
-    Attribute, Ident, LitStr, Token,
+    Attribute, Ident, LitBool, LitStr, Token,
 };
 
 use crate::{auth_scheme::AuthScheme, util};
 
 mod kw {
-    use syn::custom_keyword;
-
-    custom_keyword!(metadata);
-    custom_keyword!(description);
-    custom_keyword!(method);
-    custom_keyword!(name);
-    custom_keyword!(path);
-    custom_keyword!(authentication);
+    syn::custom_keyword!(metadata);
+    syn::custom_keyword!(description);
+    syn::custom_keyword!(method);
+    syn::custom_keyword!(name);
+    syn::custom_keyword!(path);
+    syn::custom_keyword!(rate_limited);
+    syn::custom_keyword!(authentication);
 }
 
-/// A field a Metadata that contains attribute macros
+/// A field of Metadata that contains attribute macros
 pub struct MetadataField<T> {
     /// attributes over the field
     pub attrs: Vec<Attribute>,
@@ -43,6 +42,9 @@ pub struct Metadata {
     /// The path field.
     pub path: LitStr,
 
+    /// The rate_limited field.
+    pub rate_limited: Vec<MetadataField<LitBool>>,
+
     /// The authentication field.
     pub authentication: Vec<MetadataField<AuthScheme>>,
 }
@@ -50,12 +52,8 @@ pub struct Metadata {
 fn set_field<T: ToTokens>(field: &mut Option<T>, value: T) -> syn::Result<()> {
     match field {
         Some(existing_value) => {
-            let mut error =
-                syn::Error::new_spanned(value, "duplicate field assignment");
-            error.combine(syn::Error::new_spanned(
-                existing_value,
-                "first one here",
-            ));
+            let mut error = syn::Error::new_spanned(value, "duplicate field assignment");
+            error.combine(syn::Error::new_spanned(existing_value, "first one here"));
             Err(error)
         }
         None => {
@@ -73,13 +71,14 @@ impl Parse for Metadata {
         let field_values;
         braced!(field_values in input);
 
-        let field_values = field_values
-            .parse_terminated::<FieldValue, Token![,]>(FieldValue::parse)?;
+        let field_values =
+            field_values.parse_terminated::<FieldValue, Token![,]>(FieldValue::parse)?;
 
         let mut description = None;
         let mut method = None;
         let mut name = None;
         let mut path = None;
+        let mut rate_limited = vec![];
         let mut authentication = vec![];
 
         for field_value in field_values {
@@ -88,25 +87,28 @@ impl Parse for Metadata {
                 FieldValue::Method(m) => set_field(&mut method, m)?,
                 FieldValue::Name(n) => set_field(&mut name, n)?,
                 FieldValue::Path(p) => set_field(&mut path, p)?,
+                FieldValue::RateLimited(value, attrs) => {
+                    rate_limited.push(MetadataField { attrs, value });
+                }
                 FieldValue::Authentication(value, attrs) => {
                     authentication.push(MetadataField { attrs, value });
                 }
             }
         }
 
-        let missing_field = |name| {
-            syn::Error::new_spanned(
-                metadata_kw,
-                format!("missing field `{}`", name),
-            )
-        };
+        let missing_field =
+            |name| syn::Error::new_spanned(metadata_kw, format!("missing field `{}`", name));
 
         Ok(Self {
-            description: description
-                .ok_or_else(|| missing_field("description"))?,
+            description: description.ok_or_else(|| missing_field("description"))?,
             method: method.ok_or_else(|| missing_field("method"))?,
             name: name.ok_or_else(|| missing_field("name"))?,
             path: path.ok_or_else(|| missing_field("path"))?,
+            rate_limited: if rate_limited.is_empty() {
+                return Err(missing_field("rate_limited"));
+            } else {
+                rate_limited
+            },
             authentication: if authentication.is_empty() {
                 return Err(missing_field("authentication"));
             } else {
@@ -121,6 +123,7 @@ enum Field {
     Method,
     Name,
     Path,
+    RateLimited,
     Authentication,
 }
 
@@ -140,6 +143,9 @@ impl Parse for Field {
         } else if lookahead.peek(kw::path) {
             let _: kw::path = input.parse()?;
             Ok(Self::Path)
+        } else if lookahead.peek(kw::rate_limited) {
+            let _: kw::rate_limited = input.parse()?;
+            Ok(Self::RateLimited)
         } else if lookahead.peek(kw::authentication) {
             let _: kw::authentication = input.parse()?;
             Ok(Self::Authentication)
@@ -154,6 +160,7 @@ enum FieldValue {
     Method(Ident),
     Name(LitStr),
     Path(LitStr),
+    RateLimited(LitBool, Vec<Attribute>),
     Authentication(AuthScheme, Vec<Attribute>),
 }
 
@@ -179,14 +186,16 @@ impl Parse for FieldValue {
                 let path: LitStr = input.parse()?;
 
                 if !util::is_valid_endpoint_path(&path.value()) {
-                    return Err(syn::Error::new_spanned(&path, "path may only contain printable ASCII characters with no spaces"));
+                    return Err(syn::Error::new_spanned(
+                        &path,
+                        "path may only contain printable ASCII characters with no spaces",
+                    ));
                 }
 
                 Self::Path(path)
             }
-            Field::Authentication => {
-                Self::Authentication(input.parse()?, attrs)
-            }
+            Field::RateLimited => Self::RateLimited(input.parse()?, attrs),
+            Field::Authentication => Self::Authentication(input.parse()?, attrs),
         })
     }
 }

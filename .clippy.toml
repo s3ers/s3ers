@@ -1,0 +1,13 @@
+msrv = "1.55"
+disallowed-types = [
+    "std::collections::HashMap",
+    "std::collections::HashSet",
+]
+enforced-import-renames = [
+    { path = "quick_xml::de::from_slice", rename = "from_xml_slice" },
+    { path = "quick_xml::de::from_str", rename = "from_xml_str" },
+]
+standard-macro-braces = [
+    { name = "quote", brace = "{" },
+    { name = "quote::quote", brace = "{" },
+]

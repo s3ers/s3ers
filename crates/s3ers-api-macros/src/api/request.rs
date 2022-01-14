@@ -5,8 +5,8 @@ use std::collections::btree_map::{BTreeMap, Entry};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{
-    parse_quote, punctuated::Punctuated, spanned::Spanned, visit::Visit,
-    Attribute, Field, Ident, Lifetime, Token,
+    parse_quote, punctuated::Punctuated, spanned::Spanned, visit::Visit, Attribute, Field, Ident,
+    Lifetime, Token,
 };
 
 use super::{kw, metadata::Metadata};
@@ -14,7 +14,7 @@ use crate::util::{all_cfgs, all_cfgs_expr, extract_cfg};
 
 /// The result of processing the `request` section of the macro.
 pub(crate) struct Request {
-    /// The `request` keyword.
+    /// The `request` keyword
     pub(super) request_kw: kw::request,
 
     /// The attributes that will be applied to the struct definition.
@@ -25,7 +25,7 @@ pub(crate) struct Request {
 }
 
 impl Request {
-    /// The combination of every field unique lifetime annotations.
+    /// The combination of every fields unique lifetime annotation.
     fn all_lifetimes(&self) -> BTreeMap<Lifetime, Option<Attribute>> {
         let mut lifetimes = BTreeMap::new();
 
@@ -43,34 +43,22 @@ impl Request {
                     Entry::Occupied(mut o) => {
                         let lifetime_cfg = o.get_mut();
 
-                        // If at least one field uses this lifetime and has no
-                        // cfg attribute, we don't need a cfg attribute for the
-                        // lifetime either.
-                        *lifetime_cfg = Option::zip(
-                            lifetime_cfg.as_ref(),
-                            self.field_cfg.as_ref(),
-                        )
-                        .map(|(a, b)| {
-                            let expr_a = extract_cfg(a);
-                            let expr_b = extract_cfg(b);
-                            parse_quote! { #[cfg( any( #expr_a, #expr_b ) )] }
-                        });
+                        // If at least one field uses this lifetime and has no cfg attribute, we
+                        // don't need a cfg attribute for the lifetime either.
+                        *lifetime_cfg = Option::zip(lifetime_cfg.as_ref(), self.field_cfg.as_ref())
+                            .map(|(a, b)| {
+                                let expr_a = extract_cfg(a);
+                                let expr_b = extract_cfg(b);
+                                parse_quote! { #[cfg( any( #expr_a, #expr_b ) )] }
+                            });
                     }
                 }
             }
         }
 
         for field in &self.fields {
-            let field_cfg = if field.attrs.is_empty() {
-                None
-            } else {
-                all_cfgs(&field.attrs)
-            };
-            Visitor {
-                lifetimes: &mut lifetimes,
-                field_cfg,
-            }
-            .visit_type(&field.ty);
+            let field_cfg = if field.attrs.is_empty() { None } else { all_cfgs(&field.attrs) };
+            Visitor { lifetimes: &mut lifetimes, field_cfg }.visit_type(&field.ty);
         }
 
         lifetimes
@@ -88,8 +76,9 @@ impl Request {
         let docs = format!(
             "Data for a request to the `{}` API endpoint.\n\n{}",
             metadata.name.value(),
-            metadata.description.value()
+            metadata.description.value(),
         );
+        let struct_attributes = &self.attributes;
 
         let method = &metadata.method;
         let path = &metadata.path;
@@ -103,12 +92,10 @@ impl Request {
             }
         });
 
-        let struct_attributes = &self.attributes;
-        let fields = &self.fields;
-
         let request_ident = Ident::new("Request", self.request_kw.span());
         let lifetimes = self.all_lifetimes();
         let lifetimes = lifetimes.iter().map(|(lt, attr)| quote! { #attr #lt });
+        let fields = &self.fields;
 
         quote! {
             #[doc = #docs]
@@ -120,7 +107,7 @@ impl Request {
                 #s3ers_serde::_FakeDeriveSerde,
             )]
             #[cfg_attr(not(feature = "unstable-exhaustive-types"), non_exhaustive)]
-            #[incoming_derive(!Deserialize, #s3ers_api_macros::_FameDeriveS3ersApi)]
+            #[incoming_derive(!Deserialize, #s3ers_api_macros::_FakeDeriveS3ers)]
             #[s3ers_api(
                 method = #method,
                 path = #path,

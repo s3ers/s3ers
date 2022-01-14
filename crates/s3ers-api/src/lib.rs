@@ -1,7 +1,9 @@
+#![doc(html_favicon_url = "https://www.s3ers.io/favicon.ico")]
+#![doc(html_logo_url = "https://www.s3ers.io/images/logo.png")]
 //! Core types used to define the requests and responses for each endpoint in the various
-//! [S3 API specifications][apis].
+//! [Matrix API specifications][apis].
 //!
-//! When implementing a new S3 API, each endpoint has a request type which implements
+//! When implementing a new Matrix API, each endpoint has a request type which implements
 //! `Endpoint`, and a response type connected via an associated type.
 //!
 //! An implementation of `Endpoint` contains all the information about the HTTP method, the path and
@@ -9,17 +11,18 @@
 //! Such types can then be used by client code to make requests, and by server code to fulfill
 //! those requests.
 //!
-//! [apis]: https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html
+//! [apis]: https://matrix.org/docs/spec/#matrix-apis
 
 #![warn(missing_docs)]
 
 #[cfg(not(all(feature = "client", feature = "server")))]
 compile_error!("s3ers_api's Cargo features only exist as a workaround are not meant to be disabled");
 
-use std::error::Error as StdError;
+use std::{convert::TryInto as _, error::Error as StdError};
 
 use bytes::BufMut;
 use http::Method;
+use s3ers_identifiers::UserId;
 
 /// Generates a `s3ers_api::Endpoint` from a concise definition.
 ///
@@ -32,6 +35,7 @@ use http::Method;
 ///         method: http::Method,
 ///         name: &'static str,
 ///         path: &'static str,
+///         rate_limited: bool,
 ///         authentication: s3ers_api::AuthScheme,
 ///     }
 ///
@@ -45,7 +49,7 @@ use http::Method;
 ///         // in the response from this API endpoint.
 ///     }
 ///
-///     // The error returned when a response fails, defaults to `S3Error`.
+///     // The error returned when a response fails, defaults to `MatrixError`.
 ///     error: path::to::Error
 /// }
 /// ```
@@ -69,6 +73,7 @@ use http::Method;
 ///   the path that are parameterized can indicate a variable by using a Rust identifier
 ///   prefixed with a colon, e.g. `/foo/:some_parameter`. A corresponding query string
 ///   parameter will be expected in the request struct (see below for details).
+/// * `rate_limited`: Whether or not the endpoint enforces rate limiting on requests.
 /// * `authentication`: What authentication scheme the endpoint uses.
 ///
 /// ## Request
@@ -89,7 +94,7 @@ use http::Method;
 ///   type that implements `IntoIterator<Item = (String, String)>` (e.g. `HashMap<String,
 ///   String>`, can be used for cases where an endpoint supports arbitrary query parameters.
 ///
-/// Any field that does not include one of these attributes will be part of the request's XML
+/// Any field that does not include one of these attributes will be part of the request's JSON
 /// body.
 ///
 /// ## Response
@@ -104,7 +109,7 @@ use http::Method;
 ///   `String`. The attribute value shown above as `HEADER_NAME` must be a header name constant
 ///   from `http::header`, e.g. `CONTENT_TYPE`.
 ///
-/// Any field that does not include the above attribute will be expected in the response's XML
+/// Any field that does not include the above attribute will be expected in the response's JSON
 /// body.
 ///
 /// ## Newtype bodies
@@ -112,13 +117,13 @@ use http::Method;
 /// Both the request and response block also support "newtype bodies" by using the
 /// `#[s3ers_api(body)]` attribute on a field. If present on a field, the entire request or
 /// response body will be treated as the value of the field. This allows you to treat the
-/// entire request or response body as a specific type, rather than a XML object with named
+/// entire request or response body as a specific type, rather than a JSON object with named
 /// fields. Only one field in each struct can be marked with this attribute. It is an error to
 /// have a newtype body field and normal body fields within the same struct.
 ///
 /// There is another kind of newtype body that is enabled with `#[s3ers_api(raw_body)]`. It is
 /// used for endpoints in which the request or response body can be arbitrary bytes instead of
-/// a XML object. A field with `#[s3ers_api(raw_body)]` needs to have the type `Vec<u8>`.
+/// a JSON objects. A field with `#[s3ers_api(raw_body)]` needs to have the type `Vec<u8>`.
 ///
 /// # Examples
 ///
@@ -131,7 +136,8 @@ use http::Method;
 ///             description: "Does something.",
 ///             method: POST,
 ///             name: "some_endpoint",
-///             path: "/some/endpoint/:baz",
+///             path: "/_matrix/some/endpoint/:baz",
+///             rate_limited: false,
 ///             authentication: None,
 ///         }
 ///
@@ -171,7 +177,8 @@ use http::Method;
 ///             description: "Does something.",
 ///             method: PUT,
 ///             name: "newtype_body_endpoint",
-///             path: "/some/newtype/body/endpoint",
+///             path: "/_matrix/some/newtype/body/endpoint",
+///             rate_limited: false,
 ///             authentication: None,
 ///         }
 ///
@@ -197,10 +204,10 @@ pub mod exports {
     pub use bytes;
     pub use http;
     pub use percent_encoding;
-    pub use quick_xml;
     pub use s3ers_api_macros;
     pub use s3ers_serde;
     pub use serde;
+    pub use serde_json;
 }
 
 use error::{FromHttpRequestError, FromHttpResponseError, IntoHttpError};
@@ -244,7 +251,7 @@ impl<'a> SendAccessToken<'a> {
     }
 }
 
-/// A request type for a S3 API endpoint, used for sending requests.
+/// A request type for a Matrix API endpoint, used for sending requests.
 pub trait OutgoingRequest: Sized {
     /// A type capturing the expected error conditions the server can return.
     type EndpointError: EndpointError;
@@ -257,11 +264,11 @@ pub trait OutgoingRequest: Sized {
 
     /// Tries to convert this request into an `http::Request`.
     ///
-    /// This method should only fail when called on endpoints that requires authentication. It may
+    /// This method should only fail when called on endpoints that require authentication. It may
     /// also fail with a serialization error in case of bugs in s3ers though.
     ///
     /// The endpoints path will be appended to the given `base_url`, for example
-    /// `https://s3.aws.amazon.com`. Since all paths begin with a slash, it is not necessary for the
+    /// `https://matrix.org`. Since all paths begin with a slash, it is not necessary for the
     /// `base_url` to have a trailing slash. If it has one however, it will be ignored.
     fn try_into_http_request<T: Default + BufMut>(
         self,
@@ -270,7 +277,7 @@ pub trait OutgoingRequest: Sized {
     ) -> Result<http::Request<T>, IntoHttpError>;
 }
 
-/// A response type for a S3 API endpoint, used for receiving responses.
+/// A response type for a Matrix API endpoint, used for receiving responses.
 pub trait IncomingResponse: Sized {
     /// A type capturing the expected error conditions the server can return.
     type EndpointError: EndpointError;
@@ -281,7 +288,44 @@ pub trait IncomingResponse: Sized {
     ) -> Result<Self, FromHttpResponseError<Self::EndpointError>>;
 }
 
-/// A request type for a S3 API endpoint, used for receiving requests.
+/// An extension to `OutgoingRequest` which provides Appservice specific methods.
+pub trait OutgoingRequestAppserviceExt: OutgoingRequest {
+    /// Tries to convert this request into an `http::Request` and appends a virtual `user_id` to
+    /// [assert Appservice identity][id_assert].
+    ///
+    /// [id_assert]: https://matrix.org/docs/spec/application_service/r0.1.2#identity-assertion
+    fn try_into_http_request_with_user_id<T: Default + BufMut>(
+        self,
+        base_url: &str,
+        access_token: SendAccessToken<'_>,
+        user_id: &UserId,
+    ) -> Result<http::Request<T>, IntoHttpError> {
+        let mut http_request = self.try_into_http_request(base_url, access_token)?;
+        let user_id_query = s3ers_serde::urlencoded::to_string(&[("user_id", user_id)])?;
+
+        let uri = http_request.uri().to_owned();
+        let mut parts = uri.into_parts();
+
+        let path_and_query_with_user_id = match &parts.path_and_query {
+            Some(path_and_query) => match path_and_query.query() {
+                Some(_) => format!("{}&{}", path_and_query, user_id_query),
+                None => format!("{}?{}", path_and_query, user_id_query),
+            },
+            None => format!("/?{}", user_id_query),
+        };
+
+        parts.path_and_query =
+            Some(path_and_query_with_user_id.try_into().map_err(http::Error::from)?);
+
+        *http_request.uri_mut() = parts.try_into().map_err(http::Error::from)?;
+
+        Ok(http_request)
+    }
+}
+
+impl<T: OutgoingRequest> OutgoingRequestAppserviceExt for T {}
+
+/// A request type for a Matrix API endpoint, used for receiving requests.
 pub trait IncomingRequest: Sized {
     /// A type capturing the error conditions that can be returned in the response.
     type EndpointError: EndpointError;
@@ -298,7 +342,7 @@ pub trait IncomingRequest: Sized {
     ) -> Result<Self, FromHttpRequestError>;
 }
 
-/// A request type for a S3 API endpoint, used for sending responses.
+/// A request type for a Matrix API endpoint, used for sending responses.
 pub trait OutgoingResponse {
     /// Tries to convert this response into an `http::Response`.
     ///
@@ -310,9 +354,7 @@ pub trait OutgoingResponse {
 }
 
 /// Gives users the ability to define their own serializable / deserializable errors.
-pub trait EndpointError:
-    OutgoingResponse + StdError + Sized + Send + 'static
-{
+pub trait EndpointError: OutgoingResponse + StdError + Sized + Send + 'static {
     /// Tries to construct `Self` from an `http::Response`.
     ///
     /// This will always return `Err` variant when no `error` field is defined in
@@ -336,13 +378,17 @@ pub enum AuthScheme {
     None,
 
     /// Authentication is performed by including an access token in the `Authentication` http
-    /// header.
+    /// header, or an `access_token` query parameter.
     ///
     /// It is recommended to use the header over the query parameter.
-    AwsSignatureV4Header,
+    AccessToken,
+
+    /// Authentication is performed by including X-Matrix signatures in the request headers,
+    /// as defined in the federation API.
+    ServerSignatures,
 
     /// Authentication is performed by setting the `access_token` query parameter.
-    AwsSignatureV4QueryParams,
+    QueryOnlyAccessToken,
 }
 
 /// Metadata about an API endpoint.
@@ -361,6 +407,9 @@ pub struct Metadata {
     /// The path of this endpoint's URL, with variable names where path parameters should be filled
     /// in during a request.
     pub path: &'static str,
+
+    /// Whether or not this endpoint is rate limited by the server.
+    pub rate_limited: bool,
 
     /// What authentication scheme the server uses for this endpoint.
     pub authentication: AuthScheme,

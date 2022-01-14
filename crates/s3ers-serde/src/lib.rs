@@ -1,23 +1,67 @@
-use serde::{Deserialize, Serialize};
-use std::fmt;
+#![doc(html_favicon_url = "https://www.s3ers.io/favicon.ico")]
+#![doc(html_logo_url = "https://www.s3ers.io/images/logo.png")]
+//! (De)serialization helpers for other s3ers crates.
 
-pub use self::buf::{slice_to_buf, xml_to_buf};
+#![warn(missing_docs)]
 
+use serde_json::Value as JsonValue;
+
+mod base64;
 mod buf;
+pub mod can_be_empty;
+mod canonical_json;
+mod cow;
+pub mod duration;
+mod empty;
+pub mod json_string;
+mod raw;
+pub mod single_element_seq;
+mod strings;
+pub mod test;
 pub mod urlencoded;
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub enum XmlValue {
-    String(String),
+pub use self::{
+    base64::Base64,
+    buf::{json_to_buf, slice_to_buf},
+    can_be_empty::{is_empty, CanBeEmpty},
+    canonical_json::{
+        to_canonical_value, try_from_json_map,
+        value::{CanonicalJsonValue, Object as CanonicalJsonObject},
+        Error as CanonicalJsonError,
+    },
+    cow::deserialize_cow_str,
+    empty::vec_as_map_of_empty,
+    raw::Raw,
+    strings::{
+        btreemap_int_or_string_to_int_values, empty_string_as_none, int_or_string_to_int,
+        none_as_empty_string,
+    },
+};
+
+/// The inner type of [`JsonValue::Object`].
+pub type JsonObject = serde_json::Map<String, JsonValue>;
+
+/// Check whether a value is equal to its default value.
+pub fn is_default<T: Default + PartialEq>(val: &T) -> bool {
+    *val == T::default()
 }
 
-impl fmt::Display for XmlValue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt("", f)
-    }
+/// Simply returns `true`.
+///
+/// Useful for `#[serde(default = ...)]`.
+pub fn default_true() -> bool {
+    true
 }
 
-/// A type that can be sent to another party that understands the s3 protocol.
+/// Simply dereferences the given bool.
+///
+/// Useful for `#[serde(skip_serializing_if = ...)]`.
+#[allow(clippy::trivially_copy_pass_by_ref)]
+pub fn is_true(b: &bool) -> bool {
+    *b
+}
+
+/// A type that can be sent to another party that understands the matrix protocol.
 ///
 /// If any of the fields of `Self` don't implement serde's `Deserialize`, you can derive this trait
 /// to generate a corresponding 'Incoming' type that supports deserialization. This is useful for
@@ -29,4 +73,15 @@ impl fmt::Display for XmlValue {
 pub trait Outgoing {
     /// The 'Incoming' variant of `Self`.
     type Incoming;
+}
+
+// -- Everything below is macro-related --
+
+pub use s3ers_serde_macros::*;
+
+/// This module is used to support the generated code from s3ers-serde-macros.
+/// It is not considered part of s3ers-serde's public API.
+#[doc(hidden)]
+pub mod exports {
+    pub use serde;
 }

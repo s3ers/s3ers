@@ -10,7 +10,7 @@ impl Request {
         let http = quote! { #s3ers_api::exports::http };
         let percent_encoding = quote! { #s3ers_api::exports::percent_encoding };
         let s3ers_serde = quote! { #s3ers_api::exports::s3ers_serde };
-        let serde_xml = quote! { #s3ers_api::exports::serde_xml };
+        let serde_json = quote! { #s3ers_api::exports::serde_json };
 
         let method = &self.method;
         let error_ty = &self.error_ty;
@@ -23,15 +23,15 @@ impl Request {
 
         // FIXME: the rest of the field initializer expansions are gated `cfg(...)`
         // except this one. If we get errors about missing fields in IncomingRequest for
-        // a path field, look here.
+        // a path field look here.
         let (parse_request_path, path_vars) = if self.has_path_fields() {
             let path_string = self.path.value();
 
+            assert!(path_string.starts_with('/'), "path needs to start with '/'");
             assert!(
-                path_string.starts_with('/'),
-                "path needs to start with '/'"
+                path_string.chars().filter(|c| *c == ':').count() == self.path_field_count(),
+                "number of declared path parameters needs to match amount of placeholders in path"
             );
-            assert!(path_string.chars().filter(|c| *c == ':').count() == self.path_field_count(), "number of declared path parameters needs to match amount of placeholders in path");
 
             let path_var_decls = path_string[1..]
                 .split('/')
@@ -42,7 +42,8 @@ impl Request {
                     quote! {
                         let #path_var = {
                             let segment = path_segments[#i].as_bytes();
-                            let decoded = #percent_encoding::percent_decode(segment).decode_utf8()?;
+                            let decoded =
+                                #percent_encoding::percent_decode(segment).decode_utf8()?;
 
                             ::std::convert::TryFrom::try_from(&*decoded)?
                         };
@@ -50,7 +51,8 @@ impl Request {
                 });
 
             let parse_request_path = quote! {
-                let path_segments: ::std::vec::Vec<&::std::primitive::str> = request.uri().path()[1..].split('/').collect();
+                let path_segments: ::std::vec::Vec<&::std::primitive::str> =
+                    request.uri().path()[1..].split('/').collect();
 
                 #(#path_var_decls)*
             };
@@ -60,23 +62,15 @@ impl Request {
                 .filter(|seg| seg.starts_with(':'))
                 .map(|seg| Ident::new(&seg[1..], Span::call_site()));
 
-            (parse_request_path, quote! { #(#path_vars, )* })
+            (parse_request_path, quote! { #(#path_vars,)* })
         } else {
             (TokenStream::new(), TokenStream::new())
         };
 
-        let (parse_query, query_vars) = if let Some(field) =
-            self.query_map_field()
-        {
-            let cfg_attrs = field
-                .attrs
-                .iter()
-                .filter(|a| a.path.is_ident("cfg"))
-                .collect::<Vec<_>>();
-            let field_name = field
-                .ident
-                .as_ref()
-                .expect("expected field to have an identifier");
+        let (parse_query, query_vars) = if let Some(field) = self.query_map_field() {
+            let cfg_attrs =
+                field.attrs.iter().filter(|a| a.path.is_ident("cfg")).collect::<Vec<_>>();
+            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
             let parse = quote! {
                 #( #cfg_attrs )*
                 let #field_name = #s3ers_serde::urlencoded::from_str(
@@ -112,14 +106,16 @@ impl Request {
         };
 
         let (parse_headers, header_vars) = if self.has_header_fields() {
-            let (decls, names): (TokenStream, Vec<_>) = self.header_fields()
+            let (decls, names): (TokenStream, Vec<_>) = self
+                .header_fields()
                 .map(|request_field| {
                     let (field, header_name) = match request_field {
                         RequestField::Header(field, header_name) => (field, header_name),
                         _ => panic!("expected request field to be header variant"),
                     };
 
-                    let cfg_attrs = field.attrs.iter().filter(|a| a.path.is_ident("cfg")).collect::<Vec<_>>();
+                    let cfg_attrs =
+                        field.attrs.iter().filter(|a| a.path.is_ident("cfg")).collect::<Vec<_>>();
 
                     let field_name = &field.ident;
                     let header_name_string = header_name.to_string();
@@ -127,8 +123,19 @@ impl Request {
                     let (some_case, none_case) = match &field.ty {
                         syn::Type::Path(syn::TypePath {
                             path: syn::Path { segments, .. }, ..
-                        }) if segments.last().unwrap().ident == "Option" => (quote! { Some(str_value.to_owner()) }, quote! { None }),
-                        _ => (quote! { str_value.to_owned() }, quote! { return Err(#s3ers_api::error::HeaderDeserializationError::MissingHeader(#header_name_string.into())).into() }),
+                        }) if segments.last().unwrap().ident == "Option" => {
+                            (quote! { Some(str_value.to_owned()) }, quote! { None })
+                        }
+                        _ => (
+                            quote! { str_value.to_owned() },
+                            quote! {
+                                return Err(
+                                    #s3ers_api::error::HeaderDeserializationError::MissingHeader(
+                                        #header_name_string.into()
+                                    ).into(),
+                                )
+                            },
+                        ),
                     };
 
                     let decl = quote! {
@@ -137,16 +144,20 @@ impl Request {
                             Some(header_value) => {
                                 let str_value = header_value.to_str()?;
                                 #some_case
-                            },
+                            }
                             None => #none_case,
                         };
                     };
 
-                    (decl, quote! {
-                        #( #cfg_attrs )*
-                        #field_name
-                    })
-                }).unzip();
+                    (
+                        decl,
+                        quote! {
+                            #( #cfg_attrs )*
+                            #field_name
+                        },
+                    )
+                })
+                .unzip();
 
             let parse = quote! {
                 let headers = request.headers();
@@ -159,21 +170,6 @@ impl Request {
             (TokenStream::new(), TokenStream::new())
         };
 
-        let (parse_body, body_vars) = if let Some(field) = self.raw_body_field()
-        {
-            let field_name = field
-                .ident
-                .as_ref()
-                .expect("expected field to have an identifier");
-            let parse = quote! {
-                let #field_name = ::std::convert::AsRef::<[::std::primitive::u8]>::as_ref(request.body()).to_vec();
-            };
-
-            (parse, quote! { #field_name, })
-        } else {
-            vars(self.body_fields(), quote! { request_body })
-        };
-
         let extract_body = self.has_body_fields().then(|| {
             let body_lifetimes = (!self.lifetimes.body.is_empty()).then(|| {
                 // duplicate the anonymous lifetime as many times as needed
@@ -182,22 +178,42 @@ impl Request {
             });
 
             quote! {
-                let request_body: <RequestBody #body_lifetimes as #s3ers_serde::Outgoing>::Incoming = {
-                    let body = ::std::convert::AsRef::<[::std::primitive::u8]>::as_ref(request.body());
+                let request_body: <
+                    RequestBody #body_lifetimes
+                    as #s3ers_serde::Outgoing
+                >::Incoming = {
+                    let body = ::std::convert::AsRef::<[::std::primitive::u8]>::as_ref(
+                        request.body(),
+                    );
 
-                    #serde_xml::from_slice(match body {
-                        [] => b"",
+                    #serde_json::from_slice(match body {
+                        // If the request body is completely empty, pretend it is an empty JSON
+                        // object instead. This allows requests with only optional body parameters
+                        // to be deserialized in that case.
+                        [] => b"{}",
                         b => b,
                     })?
                 };
             }
         });
 
+        let (parse_body, body_vars) = if let Some(field) = self.raw_body_field() {
+            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
+            let parse = quote! {
+                let #field_name =
+                    ::std::convert::AsRef::<[u8]>::as_ref(request.body()).to_vec();
+            };
+
+            (parse, quote! { #field_name, })
+        } else {
+            vars(self.body_fields(), quote! { request_body })
+        };
+
         let non_auth_impl = matches!(self.authentication, AuthScheme::None(_)).then(|| {
             quote! {
                 #[automatically_derived]
                 #[cfg(feature = "server")]
-                impl #s3ers_api::IncomingNonAuthRequest for #incoming_request_type { }
+                impl #s3ers_api::IncomingNonAuthRequest for #incoming_request_type {}
             }
         });
 
@@ -210,12 +226,14 @@ impl Request {
 
                 const METADATA: #s3ers_api::Metadata = self::METADATA;
 
-                fn try_from_http_request<T: ::std::convert::AsRef<[::std::primitive::u8]>>(request: #http::Request<T>) -> ::std::result::Result<Self, #s3ers_api::error::FromHttpRequestError> {
+                fn try_from_http_request<T: ::std::convert::AsRef<[::std::primitive::u8]>>(
+                    request: #http::Request<T>,
+                ) -> ::std::result::Result<Self, #s3ers_api::error::FromHttpRequestError> {
                     if request.method() != #http::Method::#method {
-                        return Err(#s3ers_api::error::FromHttpRequestError::MethodMismatch) {
+                        return Err(#s3ers_api::error::FromHttpRequestError::MethodMismatch {
                             expected: #http::Method::#method,
                             received: request.method().clone(),
-                        };
+                        });
                     }
 
                     #parse_request_path
@@ -246,15 +264,9 @@ fn vars<'a>(
     fields
         .into_iter()
         .map(|field| {
-            let field_name = field
-                .ident
-                .as_ref()
-                .expect("expected field to have an identifier");
-            let cfg_attrs = field
-                .attrs
-                .iter()
-                .filter(|a| a.path.is_ident("crfg"))
-                .collect::<Vec<_>>();
+            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
+            let cfg_attrs =
+                field.attrs.iter().filter(|a| a.path.is_ident("cfg")).collect::<Vec<_>>();
 
             let decl = quote! {
                 #( #cfg_attrs )*

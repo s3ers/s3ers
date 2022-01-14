@@ -138,16 +138,10 @@ where
     where
         V: de::Visitor<'de>,
     {
-        self.deserialize_val(move |val| {
-            val.deserialize_enum(name, variants, visitor)
-        })
+        self.deserialize_val(move |val| val.deserialize_enum(name, variants, visitor))
     }
 
-    fn deserialize_tuple<V>(
-        self,
-        len: usize,
-        visitor: V,
-    ) -> Result<V::Value, Self::Error>
+    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {
@@ -163,9 +157,7 @@ where
     where
         V: de::Visitor<'de>,
     {
-        self.deserialize_val(move |val| {
-            val.deserialize_struct(name, fields, visitor)
-        })
+        self.deserialize_val(move |val| val.deserialize_struct(name, fields, visitor))
     }
 
     fn deserialize_unit_struct<V>(
@@ -176,9 +168,7 @@ where
     where
         V: de::Visitor<'de>,
     {
-        self.deserialize_val(move |val| {
-            val.deserialize_unit_struct(name, visitor)
-        })
+        self.deserialize_val(move |val| val.deserialize_unit_struct(name, visitor))
     }
 
     fn deserialize_tuple_struct<V>(
@@ -190,9 +180,7 @@ where
     where
         V: de::Visitor<'de>,
     {
-        self.deserialize_val(move |val| {
-            val.deserialize_tuple_struct(name, len, visitor)
-        })
+        self.deserialize_val(move |val| val.deserialize_tuple_struct(name, len, visitor))
     }
 
     fn deserialize_newtype_struct<V>(
@@ -203,15 +191,10 @@ where
     where
         V: de::Visitor<'de>,
     {
-        self.deserialize_val(move |val| {
-            val.deserialize_newtype_struct(name, visitor)
-        })
+        self.deserialize_val(move |val| val.deserialize_newtype_struct(name, visitor))
     }
 
-    fn deserialize_ignored_any<V>(
-        self,
-        visitor: V,
-    ) -> Result<V::Value, Self::Error>
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de>,
     {

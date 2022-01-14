@@ -23,8 +23,7 @@ mod kw {
     custom_keyword!(response);
 }
 
-/// The result of processing the `s3ers_api` macro, ready for output back to
-/// source code.
+/// The result of processing the `s3ers_api` macro, ready for output back to source code.
 pub struct Api {
     /// The `metadata` section of the macro.
     metadata: Metadata,
@@ -49,7 +48,20 @@ impl Api {
         let method = &metadata.method;
         let name = &metadata.name;
         let path = &metadata.path;
-        let authentication: TokenStream = metadata
+        let rate_limited: TokenStream = metadata
+            .rate_limited
+            .iter()
+            .map(|r| {
+                let attrs = &r.attrs;
+                let value = &r.value;
+                quote! {
+                    #( #attrs )*
+                    rate_limited: #value,
+                }
+            })
+            .collect();
+        let authentication: TokenStream = self
+            .metadata
             .authentication
             .iter()
             .map(|r| {
@@ -62,20 +74,14 @@ impl Api {
             })
             .collect();
 
-        let error_ty = self.error_ty.map_or_else(
-            || quote! { #s3ers_api::error::S3Error },
-            |err_ty| quote! { #err_ty },
-        );
+        let error_ty = self
+            .error_ty
+            .map_or_else(|| quote! { #s3ers_api::error::MatrixError }, |err_ty| quote! { #err_ty });
 
-        let request = self
-            .request
-            .map(|req| req.expand(metadata, &error_ty, &s3ers_api));
-        let response = self
-            .response
-            .map(|res| res.expand(metadata, &error_ty, &s3ers_api));
+        let request = self.request.map(|req| req.expand(metadata, &error_ty, &s3ers_api));
+        let response = self.response.map(|res| res.expand(metadata, &error_ty, &s3ers_api));
 
-        let metadata_doc =
-            format!("Metadata for the `{}` API endpoint.", name.value());
+        let metadata_doc = format!("Metadata for the `{}` API endpoint.", name.value());
 
         quote! {
             #[doc = #metadata_doc]
@@ -84,12 +90,15 @@ impl Api {
                 method: #http::Method::#method,
                 name: #name,
                 path: #path,
-                #authentication,
+                #rate_limited
+                #authentication
             };
 
             #request
-
             #response
+
+            #[cfg(not(any(feature = "client", feature = "server")))]
+            type _SilenceUnusedError = #error_ty;
         }
     }
 }
@@ -105,6 +114,7 @@ impl Parse for Api {
 
             (Some(request), after_req_attrs)
         } else {
+            // There was no `request` field so the attributes are for `response`
             (None, req_attrs)
         };
 
@@ -129,19 +139,11 @@ impl Parse for Api {
             })
             .transpose()?;
 
-        Ok(Self {
-            metadata,
-            request,
-            response,
-            error_ty,
-        })
+        Ok(Self { metadata, request, response, error_ty })
     }
 }
 
-fn parse_request(
-    input: ParseStream<'_>,
-    attributes: Vec<Attribute>,
-) -> syn::Result<Request> {
+fn parse_request(input: ParseStream<'_>, attributes: Vec<Attribute>) -> syn::Result<Request> {
     let request_kw: kw::request = input.parse()?;
     let _: Token![:] = input.parse()?;
     let fields;
@@ -149,17 +151,10 @@ fn parse_request(
 
     let fields = fields.parse_terminated::<_, Token![,]>(Field::parse_named)?;
 
-    Ok(Request {
-        request_kw,
-        attributes,
-        fields,
-    })
+    Ok(Request { request_kw, attributes, fields })
 }
 
-fn parse_response(
-    input: ParseStream<'_>,
-    attributes: Vec<Attribute>,
-) -> syn::Result<Response> {
+fn parse_response(input: ParseStream<'_>, attributes: Vec<Attribute>) -> syn::Result<Response> {
     let response_kw: kw::response = input.parse()?;
     let _: Token![:] = input.parse()?;
     let fields;
@@ -167,9 +162,5 @@ fn parse_response(
 
     let fields = fields.parse_terminated::<_, Token![,]>(Field::parse_named)?;
 
-    Ok(Response {
-        response_kw,
-        attributes,
-        fields,
-    })
+    Ok(Response { attributes, fields, response_kw })
 }

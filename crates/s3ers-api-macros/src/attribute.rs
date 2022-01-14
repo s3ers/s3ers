@@ -38,10 +38,7 @@ impl<V: Parse> Parse for MetaNameValue<V> {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         let ident = input.parse()?;
         let _: Token![=] = input.parse()?;
-        Ok(MetaNameValue {
-            name: ident,
-            value: input.parse()?,
-        })
+        Ok(MetaNameValue { name: ident, value: input.parse()? })
     }
 }
 
@@ -73,10 +70,7 @@ impl Parse for Meta {
 
         if input.peek(Token![=]) {
             let _: Token![=] = input.parse()?;
-            Ok(Meta::NameValue(MetaNameValue {
-                name: ident,
-                value: input.parse()?,
-            }))
+            Ok(Meta::NameValue(MetaNameValue { name: ident, value: input.parse()? }))
         } else {
             Ok(Meta::Word(ident))
         }

@@ -2,11 +2,11 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::Field;
 
-use super::{Request, RequestField};
 use crate::auth_scheme::AuthScheme;
 
+use super::{Request, RequestField};
+
 impl Request {
-    // TODO: handle authentication
     pub fn expand_outgoing(&self, s3ers_api: &TokenStream) -> TokenStream {
         let bytes = quote! { #s3ers_api::exports::bytes };
         let http = quote! { #s3ers_api::exports::http };
@@ -15,37 +15,30 @@ impl Request {
 
         let method = &self.method;
         let error_ty = &self.error_ty;
-
         let request_path_string = if self.has_path_fields() {
             let mut format_string = self.path.value();
             let mut format_args = Vec::new();
 
             while let Some(start_of_segment) = format_string.find(':') {
                 // ':' should only ever appear at the start of a segment
-                assert_eq!(
-                    &format_string[start_of_segment - 1..start_of_segment],
-                    "/"
-                );
+                assert_eq!(&format_string[start_of_segment - 1..start_of_segment], "/");
 
-                let end_of_segment =
-                    match format_string[start_of_segment..].find('/') {
-                        Some(rel_pos) => start_of_segment + rel_pos,
-                        None => format_string.len(),
-                    };
+                let end_of_segment = match format_string[start_of_segment..].find('/') {
+                    Some(rel_pos) => start_of_segment + rel_pos,
+                    None => format_string.len(),
+                };
 
                 let path_var = Ident::new(
                     &format_string[start_of_segment + 1..end_of_segment],
                     Span::call_site(),
                 );
-
                 format_args.push(quote! {
                     #percent_encoding::utf8_percent_encode(
                         &::std::string::ToString::to_string(&self.#path_var),
                         #percent_encoding::NON_ALPHANUMERIC,
                     )
                 });
-                format_string
-                    .replace_range(start_of_segment..end_of_segment, "{}");
+                format_string.replace_range(start_of_segment..end_of_segment, "{}");
             }
 
             quote! {
@@ -56,15 +49,12 @@ impl Request {
         };
 
         let request_query_string = if let Some(field) = self.query_map_field() {
-            let field_name = field
-                .ident
-                .as_ref()
-                .expect("expected field to have identifier");
+            let field_name = field.ident.as_ref().expect("expected field to have identifier");
 
             quote! {{
                 // This function exists so that the compiler will throw an error when the type of
-                // the field with the query_map attribute doesn't implement `IntoIterator<Item =
-                // (String, String)>`.
+                // the field with the query_map attribute doesn't implement
+                // `IntoIterator<Item = (String, String)>`.
                 //
                 // This is necessary because the `s3ers_serde::urlencoded::to_string` call will
                 // result in a runtime error when the type cannot be encoded as a list key-value
@@ -82,7 +72,10 @@ impl Request {
                 let request_query = RequestQuery(self.#field_name);
                 assert_trait_impl(&request_query.0);
 
-                format_args!("?{}", #s3ers_serde::urlencoded::to_string(request_query)?)
+                format_args!(
+                    "?{}",
+                    #s3ers_serde::urlencoded::to_string(request_query)?
+                )
             }}
         } else if self.has_query_fields() {
             let request_query_init_fields = struct_init_fields(
@@ -95,20 +88,25 @@ impl Request {
                     #request_query_init_fields
                 };
 
-                format_args!("?{}", #s3ers_serde::urlencoded::to_string(request_query)?)
+                format_args!(
+                    "?{}",
+                    #s3ers_serde::urlencoded::to_string(request_query)?
+                )
             }}
         } else {
             quote! { "" }
         };
 
         // If there are no body fields, the request body will be empty (not `{}`), so the
-        // `application/xml` content-type would be wrong. It may also cause problems with CORS
-        // policies that don't allow the `Content-Type` header.
-        let mut header_kvs = if self.raw_body_field().is_some()
-            || self.has_body_fields()
-        {
+        // `application/json` content-type would be wrong. It may also cause problems with CORS
+        // policies that don't allow the `Content-Type` header (for things such as `.well-known`
+        // that are commonly handled by something else than a homeserver).
+        let mut header_kvs = if self.raw_body_field().is_some() || self.has_body_fields() {
             quote! {
-                req_headers.insert(#http::header::CONTENT_TYPE, #http::header::HeaderValue::from_static("application/xml"));
+                req_headers.insert(
+                    #http::header::CONTENT_TYPE,
+                    #http::header::HeaderValue::from_static("application/json"),
+                );
             }
         } else {
             TokenStream::new()
@@ -123,44 +121,75 @@ impl Request {
             let field_name = &field.ident;
 
             match &field.ty {
-                syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, .. }) if segments.last().unwrap().ident == "Option" => quote! {
-                    if let Some(header_val) = self.#field_name.as_ref() {
-                        req_headers.insert(#http::header::#header_name, #http::header::HeaderValue::from_str(header_val)?);
+                syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, .. })
+                    if segments.last().unwrap().ident == "Option" =>
+                {
+                    quote! {
+                        if let Some(header_val) = self.#field_name.as_ref() {
+                            req_headers.insert(
+                                #http::header::#header_name,
+                                #http::header::HeaderValue::from_str(header_val)?,
+                            );
+                        }
                     }
-                },
+                }
                 _ => quote! {
-                    req_headers.insert(#http::header::#header_name, #http::header::HeaderValue::from_str(self.#field_name.as_ref())?);
+                    req_headers.insert(
+                        #http::header::#header_name,
+                        #http::header::HeaderValue::from_str(self.#field_name.as_ref())?,
+                    );
                 },
             }
         }));
 
+        header_kvs.extend(match self.authentication {
+            AuthScheme::AccessToken(_) => quote! {
+                req_headers.insert(
+                    #http::header::AUTHORIZATION,
+                    ::std::convert::TryFrom::<_>::try_from(::std::format!(
+                        "Bearer {}",
+                        access_token
+                            .get_required_for_endpoint()
+                            .ok_or(#s3ers_api::error::IntoHttpError::NeedsAuthentication)?,
+                    ))?,
+                );
+            },
+            AuthScheme::None(_) => quote! {
+                if let Some(access_token) = access_token.get_not_required_for_endpoint() {
+                    req_headers.insert(
+                        #http::header::AUTHORIZATION,
+                        ::std::convert::TryFrom::<_>::try_from(
+                            ::std::format!("Bearer {}", access_token),
+                        )?
+                    );
+                }
+            },
+            AuthScheme::QueryOnlyAccessToken(_) | AuthScheme::ServerSignatures(_) => quote! {},
+        });
+
         let request_body = if let Some(field) = self.raw_body_field() {
-            let field_name = field
-                .ident
-                .as_ref()
-                .expect("expected field to have an identifier");
+            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
             quote! { #s3ers_serde::slice_to_buf(&self.#field_name) }
         } else if self.has_body_fields() {
-            let initializers =
-                struct_init_fields(self.body_fields(), quote! { self });
+            let initializers = struct_init_fields(self.body_fields(), quote! { self });
 
             quote! {
-                #s3ers_serde::xml_to_buf(&RequestBody { #initializers })?
+                #s3ers_serde::json_to_buf(&RequestBody { #initializers })?
             }
         } else if method == "GET" {
             quote! { <T as ::std::default::Default>::default() }
         } else {
-            quote! { #s3ers_serde::slice_to_buf(b"") }
+            quote! { #s3ers_serde::slice_to_buf(b"{}") }
         };
 
-        let (impl_generics, ty_generics, where_clause) =
-            self.generics.split_for_impl();
+        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
 
         let non_auth_impl = matches!(self.authentication, AuthScheme::None(_)).then(|| {
             quote! {
                 #[automatically_derived]
                 #[cfg(feature = "client")]
-                impl #impl_generics #s3ers_api::OutgoingNonAuthRequest for Request #ty_generics #where_clause {}
+                impl #impl_generics #s3ers_api::OutgoingNonAuthRequest
+                    for Request #ty_generics #where_clause {}
             }
         });
 
@@ -173,12 +202,21 @@ impl Request {
 
                 const METADATA: #s3ers_api::Metadata = self::METADATA;
 
-                fn try_into_http_request<T: ::std::default::Default + #bytes::BufMut>(self, base_url: &::std::primitive::std, access_token: #s3ers_api::SendAccessToken<'_>) -> ::std::result::Result<#http::Request<T>, #s3ers_api::error::IntoHttpError> {
+                fn try_into_http_request<T: ::std::default::Default + #bytes::BufMut>(
+                    self,
+                    base_url: &::std::primitive::str,
+                    access_token: #s3ers_api::SendAccessToken<'_>,
+                ) -> ::std::result::Result<#http::Request<T>, #s3ers_api::error::IntoHttpError> {
                     let metadata = self::METADATA;
 
                     let mut req_builder = #http::Request::builder()
                         .method(#http::Method::#method)
-                        .uri(::std::format!("{}{}{}", base_url.strip_suffix('/').unwrap_or(base_url), #request_path_string, #request_query_string));
+                        .uri(::std::format!(
+                            "{}{}{}",
+                            base_url.strip_suffix('/').unwrap_or(base_url),
+                            #request_path_string,
+                            #request_query_string,
+                        ));
 
                     if let Some(mut req_headers) = req_builder.headers_mut() {
                         #header_kvs
@@ -204,15 +242,9 @@ fn struct_init_fields<'a>(
     fields
         .into_iter()
         .map(|field| {
-            let field_name = field
-                .ident
-                .as_ref()
-                .expect("expected field to have an identifier");
-            let cfg_attrs = field
-                .attrs
-                .iter()
-                .filter(|a| a.path.is_ident("cfg"))
-                .collect::<Vec<_>>();
+            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
+            let cfg_attrs =
+                field.attrs.iter().filter(|a| a.path.is_ident("cfg")).collect::<Vec<_>>();
 
             quote! {
                 #( #cfg_attrs )*

@@ -23,27 +23,23 @@ mod outgoing;
 pub fn expand_derive_response(input: DeriveInput) -> syn::Result<TokenStream> {
     let fields = match input.data {
         syn::Data::Struct(s) => s.fields,
-        _ => panic!("this derive macro only works on structs"),
+        _ => panic!("This derive macro only works on structs"),
     };
 
-    let fields = fields
-        .into_iter()
-        .map(ResponseField::try_from)
-        .collect::<syn::Result<_>>()?;
+    let fields = fields.into_iter().map(ResponseField::try_from).collect::<syn::Result<_>>()?;
     let mut error_ty = None;
     for attr in input.attrs {
         if !attr.path.is_ident("s3ers_api") {
             continue;
         }
 
-        let meta =
-            attr.parse_args_with(Punctuated::<_, Token![,]>::parse_terminated)?;
+        let meta = attr.parse_args_with(Punctuated::<_, Token![,]>::parse_terminated)?;
         for MetaNameValue { name, value } in meta {
             match value {
                 MetaValue::Type(t) if name == "error_ty" => {
                     error_ty = Some(t);
                 }
-                _ => unreachable!("invalid `s3ers_api({})` attribute", name),
+                _ => unreachable!("invalid s3ers_api({}) attribute", name),
             }
         }
     }
@@ -69,30 +65,24 @@ struct Response {
 impl Response {
     /// Whether or not this request has any data in the HTTP body.
     fn has_body_fields(&self) -> bool {
-        self.fields.iter().any(|f| {
-            matches!(f, ResponseField::Body(_) | &ResponseField::NewtypeBody(_))
-        })
+        self.fields
+            .iter()
+            .any(|f| matches!(f, ResponseField::Body(_) | &ResponseField::NewtypeBody(_)))
     }
 
     /// Whether or not this request has a single newtype body field.
     fn has_newtype_body(&self) -> bool {
-        self.fields
-            .iter()
-            .any(|f| matches!(f, ResponseField::NewtypeBody(_)))
+        self.fields.iter().any(|f| matches!(f, ResponseField::NewtypeBody(_)))
     }
 
     /// Whether or not this request has a single raw body field.
     fn has_raw_body(&self) -> bool {
-        self.fields
-            .iter()
-            .any(|f| matches!(f, ResponseField::RawBody(_)))
+        self.fields.iter().any(|f| matches!(f, ResponseField::RawBody(_)))
     }
 
     /// Whether or not this request has any data in the URL path.
     fn has_header_fields(&self) -> bool {
-        self.fields
-            .iter()
-            .any(|f| matches!(f, &ResponseField::Header(..)))
+        self.fields.iter().any(|f| matches!(f, &ResponseField::Header(..)))
     }
 
     fn expand_all(&self) -> TokenStream {
@@ -102,17 +92,14 @@ impl Response {
         let serde = quote! { #s3ers_api::exports::serde };
 
         let response_body_struct = (!self.has_raw_body()).then(|| {
-            let serde_attr = self
-                .has_newtype_body()
-                .then(|| quote! { #[serde(transparent)] });
-            let fields =
-                self.fields.iter().filter_map(ResponseField::as_body_field);
+            let serde_attr = self.has_newtype_body().then(|| quote! { #[serde(transparent)] });
+            let fields = self.fields.iter().filter_map(ResponseField::as_body_field);
 
             quote! {
                 /// Data in the response body.
                 #[derive(
                     Debug,
-                    #s3ers_api_macros::_FakeDeriveS3ersApi,
+                    #s3ers_api_macros::_FakeDeriveS3ers,
                     #s3ers_serde::Outgoing,
                     #serde::Deserialize,
                     #serde::Serialize,
@@ -123,8 +110,7 @@ impl Response {
         });
 
         let outgoing_response_impl = self.expand_outgoing(&s3ers_api);
-        let incoming_response_impl =
-            self.expand_incoming(&self.error_ty, &s3ers_api);
+        let incoming_response_impl = self.expand_incoming(&self.error_ty, &s3ers_api);
 
         quote! {
             #response_body_struct
@@ -138,17 +124,14 @@ impl Response {
         // TODO: highlight problematic fields
 
         assert!(
-            self.generics.params.is_empty()
-                && self.generics.where_clause.is_none(),
-            "this macro doesn't support generic types"
+            self.generics.params.is_empty() && self.generics.where_clause.is_none(),
+            "This macro doesn't support generic types"
         );
 
-        let newtype_body_fields = self.fields.iter().filter(|f| {
-            matches!(
-                f,
-                ResponseField::NewtypeBody(_) | ResponseField::RawBody(_)
-            )
-        });
+        let newtype_body_fields = self
+            .fields
+            .iter()
+            .filter(|f| matches!(f, ResponseField::NewtypeBody(_) | ResponseField::RawBody(_)));
 
         let has_newtype_body_field = match newtype_body_fields.count() {
             0 => false,
@@ -156,19 +139,16 @@ impl Response {
             _ => {
                 return Err(syn::Error::new_spanned(
                     &self.ident,
-                    "can't have more than one newtype body field",
+                    "Can't have more than one newtype body field",
                 ))
             }
         };
 
-        let has_body_fields = self
-            .fields
-            .iter()
-            .any(|f| matches!(f, ResponseField::Body(_)));
+        let has_body_fields = self.fields.iter().any(|f| matches!(f, ResponseField::Body(_)));
         if has_newtype_body_field && has_body_fields {
             return Err(syn::Error::new_spanned(
                 &self.ident,
-                "can't have both a newtype body field and regular body fields",
+                "Can't have both a newtype body field and regular body fields",
             ));
         }
 
@@ -178,11 +158,11 @@ impl Response {
 
 /// The types of fields that a response can have.
 enum ResponseField {
+    /// JSON data in the body of the response.
+    Body(Field),
+
     /// Data in an HTTP header.
     Header(Field, Ident),
-
-    /// XML data in the body of the response.
-    Body(Field),
 
     /// A specific data type in the body of the response.
     NewtypeBody(Field),
@@ -205,9 +185,7 @@ impl ResponseField {
     /// Return the contained field if this response field is a body kind.
     fn as_body_field(&self) -> Option<&Field> {
         match self {
-            ResponseField::Body(field) | ResponseField::NewtypeBody(field) => {
-                Some(field)
-            }
+            ResponseField::Body(field) | ResponseField::NewtypeBody(field) => Some(field),
             _ => None,
         }
     }
@@ -236,7 +214,7 @@ impl TryFrom<Field> for ResponseField {
         if has_lifetime(&field.ty) {
             return Err(syn::Error::new_spanned(
                 field.ident,
-                "lifetimes on Response fields cannot be supported until GAT are stable",
+                "Lifetimes on Response fields cannot be supported until GAT are stable",
             ));
         }
 
@@ -255,7 +233,7 @@ impl TryFrom<Field> for ResponseField {
             if field_kind.is_some() {
                 return Err(syn::Error::new_spanned(
                     attr,
-                    "there can only be one field kind attribute",
+                    "There can only be one field kind attribute",
                 ));
             }
 
@@ -266,7 +244,7 @@ impl TryFrom<Field> for ResponseField {
                     _ => {
                         return Err(syn::Error::new_spanned(
                             ident,
-                            "invalid `#[s3ers_api]` argument with value, expected `body`",
+                            "Invalid #[s3ers_api] argument with value, expected `body`",
                         ));
                     }
                 },
@@ -274,7 +252,7 @@ impl TryFrom<Field> for ResponseField {
                     if name != "header" {
                         return Err(syn::Error::new_spanned(
                             name,
-                            "invalid `#[s3ers_api]` argument with value, expected `header`",
+                            "Invalid #[s3ers_api] argument with value, expected `header`",
                         ));
                     }
 
@@ -285,11 +263,10 @@ impl TryFrom<Field> for ResponseField {
         }
 
         Ok(match field_kind.unwrap_or(ResponseFieldKind::Body) {
-            ResponseFieldKind::Header => ResponseField::Header(
-                field,
-                header.expect("missing header name"),
-            ),
             ResponseFieldKind::Body => ResponseField::Body(field),
+            ResponseFieldKind::Header => {
+                ResponseField::Header(field, header.expect("missing header name"))
+            }
             ResponseFieldKind::NewtypeBody => ResponseField::NewtypeBody(field),
             ResponseFieldKind::RawBody => ResponseField::RawBody(field),
         })
@@ -310,8 +287,8 @@ impl ToTokens for ResponseField {
 
 /// The types of fields that a response can have, without their values.
 enum ResponseFieldKind {
-    Header,
     Body,
+    Header,
     NewtypeBody,
     RawBody,
 }
@@ -327,9 +304,7 @@ fn has_lifetime(ty: &Type) -> bool {
         }
     }
 
-    let mut vis = Visitor {
-        found_lifetime: false,
-    };
+    let mut vis = Visitor { found_lifetime: false };
     vis.visit_type(ty);
     vis.found_lifetime
 }
