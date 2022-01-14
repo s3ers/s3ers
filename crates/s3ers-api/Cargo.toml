@@ -29,8 +29,8 @@ server = []
 bytes = "1.0.1"
 http = "0.2.2"
 percent-encoding = "2.1.0"
-s3ers-api-macros = { version = "0.0.1", path = "../s3ers-api-macros" }
-s3ers-serde = { version = "0.5.0", path = "../s3ers-serde" }
+s3ers-api-macros = { path = "../s3ers-api-macros", version = "0.0.1" }
+s3ers-serde = { path = "../s3ers-serde", version = "0.0.1" }
 serde = { version = "1.0.118", features = ["derive"] }
 serde_json = "1.0.61"
 thiserror = "1.0.26"

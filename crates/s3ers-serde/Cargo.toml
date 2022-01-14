@@ -1,16 +1,18 @@
 [package]
-name = "s3ers-serde"
-description = "De-/serialization helpers for other s3ers crates"
-license = "MIT"
 authors = [
-    "Jonas Platte <jplatte@posteo.de>",
-    "Isaiah Inuwa <isaiah.inuwa@gmail.com>",
-    "Anthony Ramine <n.oxyde@gmail.com>",
+    "Marc 'risson' Schmitt <marc.schmitt@risson.space>",
+    "Sevan 'Byh0ki' Murriguian-Watrin <murrig_s@epita.fr>",
 ]
-homepage = "https://www.s3ers.io/"
-repository = "https://github.com/s3ers/s3ers"
-version = "0.5.0"
-edition = "2018"
+categories = ["api-bindings", "filesystem", "web-programming"]
+description = "De-/serialization helpers for other s3ers crates"
+homepage = "https://gitlab.com/s3ers/s3ers"
+keywords = ["aws", "s3", "s3ers"]
+license-file = "../../LICENSE"
+name = "s3ers-serde"
+readme = "../../README.md"
+repository = "https://gitlab.com/s3ers/s3ers"
+version = "0.0.1"
+edition = "2021"
 
 [dependencies]
 base64 = "0.13.0"
@@ -18,7 +20,7 @@ bytes = "1.0.1"
 form_urlencoded = "1.0.0"
 itoa = "0.4.6"
 js_int = { version = "0.2.0", features = ["serde"] }
-s3ers-serde-macros = { version = "=0.5.0", path = "../s3ers-serde-macros" }
+s3ers-serde-macros = { path = "../s3ers-serde-macros", version = "0.0.1" }
 serde = { version = "1.0.118", features = ["derive"] }
 serde_json = { version = "1.0.61", features = ["raw_value"] }
 

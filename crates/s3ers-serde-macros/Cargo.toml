@@ -1,20 +1,26 @@
 [package]
-authors = ["Jonas Platte <jplatte@posteo.de>"]
-categories = ["api-bindings", "web-programming"]
+authors = [
+    "Marc 'risson' Schmitt <marc.schmitt@risson.space>",
+    "Sevan 'Byh0ki' Murriguian-Watrin <murrig_s@epita.fr>",
+]
+categories = ["api-bindings", "filesystem", "web-programming"]
 description = "Procedural macros for s3ers-serde."
-homepage = "https://www.s3ers.io/"
-keywords = ["matrix", "chat", "messaging", "s3ers"]
-license = "MIT"
+homepage = "https://gitlab.com/s3ers/s3ers"
+keywords = ["aws", "s3", "s3ers"]
+license-file = "../../LICENSE"
 name = "s3ers-serde-macros"
-repository = "https://github.com/s3ers/s3ers"
-version = "0.5.0"
-edition = "2018"
+readme = "../../README.md"
+repository = "https://gitlab.com/s3ers/s3ers"
+version = "0.0.1"
+edition = "2021"
 
 [lib]
 proc-macro = true
 
+[features]
+
 [dependencies]
-proc-macro-crate = "1.0.0"
-proc-macro2 = "1.0.24"
-quote = "1.0.8"
-syn = { version = "1.0.55", features = ["full"] }
+proc-macro-crate = "1.1.0"
+proc-macro2 = "1.0.36"
+quote = "1.0.14"
+syn = { version = "1.0.85", features = ["full"] }

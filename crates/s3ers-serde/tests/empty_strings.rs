@@ -48,7 +48,8 @@ mod string {
     }
 }
 
-mod user {
+// TODO(risson): use our own types
+/* mod user {
     use s3ers_identifiers::{user_id, UserId};
     use serde::{Deserialize, Serialize};
     use serde_json::{from_value as from_json_value, json, to_value as to_json_value};
@@ -103,4 +104,4 @@ mod user {
         let decoded = User { x: Some(carl()) };
         assert_eq!(from_json_value::<User>(encoded).unwrap(), decoded);
     }
-}
+} */
