@@ -25,8 +25,8 @@
       {
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
-            # rust-bin.stable."1.57.0".default
-            rust-bin.nightly.latest.default
+            rust-bin.stable."1.57.0".default
+            # rust-bin.nightly.latest.default
             cargo-audit
             cargo-edit
             cargo-expand
