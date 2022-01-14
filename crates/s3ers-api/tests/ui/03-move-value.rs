@@ -3,7 +3,6 @@
 
 mod newtype_body {
     use s3ers_api::s3ers_api;
-    use s3ers_identifiers::UserId;
 
     #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
     pub struct Foo;
@@ -26,7 +25,7 @@ mod newtype_body {
             pub bar: String,
 
             #[s3ers_api(query)]
-            pub baz: Box<UserId>,
+            pub baz: Box<str>,
 
             #[s3ers_api(header = CONTENT_TYPE)]
             pub world: String,
@@ -44,7 +43,6 @@ mod newtype_body {
 
 mod raw_body {
     use s3ers_api::s3ers_api;
-    use s3ers_identifiers::UserId;
 
     s3ers_api! {
         metadata: {
@@ -64,7 +62,7 @@ mod raw_body {
             pub bar: String,
 
             #[s3ers_api(query)]
-            pub baz: Box<UserId>,
+            pub baz: Box<str>,
 
             #[s3ers_api(header = CONTENT_TYPE)]
             pub world: String,
@@ -82,7 +80,6 @@ mod raw_body {
 
 mod plain {
     use s3ers_api::s3ers_api;
-    use s3ers_identifiers::UserId;
 
     #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
     pub struct Foo;
@@ -103,7 +100,7 @@ mod plain {
             pub bar: String,
 
             #[s3ers_api(query)]
-            pub baz: Box<UserId>,
+            pub baz: Box<str>,
 
             #[s3ers_api(header = CONTENT_TYPE)]
             pub world: String,

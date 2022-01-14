@@ -1,18 +1,18 @@
 [package]
 authors = [
-    "Jimmy Cuadra <jimmy@jimmycuadra.com>",
-    "Jonas Platte <jplatte@posteo.de>",
+    "Marc 'risson' Schmitt <marc.schmitt@risson.space>",
+    "Sevan 'Byh0ki' Murriguian-Watrin <murrig_s@epita.fr>",
 ]
-categories = ["api-bindings", "web-programming"]
-description = "An abstraction for Matrix API endpoints."
-homepage = "https://www.s3ers.io/"
-keywords = ["matrix", "chat", "messaging", "s3ers"]
-license = "MIT"
+categories = ["api-bindings", "filesystem", "web-programming"]
+description = "An abstraction for S3 API endpoints."
+homepage = "https://gitlab.com/s3ers/s3ers"
+keywords = ["aws", "s3", "s3ers"]
+license-file = "../../LICENSE"
 name = "s3ers-api"
-readme = "README.md"
-repository = "https://github.com/s3ers/s3ers"
-version = "0.18.5"
-edition = "2018"
+readme = "../../README.md"
+repository = "https://gitlab.com/s3ers/s3ers"
+version = "0.0.1"
+edition = "2021"
 
 [package.metadata.docs.rs]
 all-features = true

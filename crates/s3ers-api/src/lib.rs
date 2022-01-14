@@ -18,11 +18,10 @@
 #[cfg(not(all(feature = "client", feature = "server")))]
 compile_error!("s3ers_api's Cargo features only exist as a workaround are not meant to be disabled");
 
-use std::{convert::TryInto as _, error::Error as StdError};
+use std::error::Error as StdError;
 
 use bytes::BufMut;
 use http::Method;
-use s3ers_identifiers::UserId;
 
 /// Generates a `s3ers_api::Endpoint` from a concise definition.
 ///
@@ -287,43 +286,6 @@ pub trait IncomingResponse: Sized {
         response: http::Response<T>,
     ) -> Result<Self, FromHttpResponseError<Self::EndpointError>>;
 }
-
-/// An extension to `OutgoingRequest` which provides Appservice specific methods.
-pub trait OutgoingRequestAppserviceExt: OutgoingRequest {
-    /// Tries to convert this request into an `http::Request` and appends a virtual `user_id` to
-    /// [assert Appservice identity][id_assert].
-    ///
-    /// [id_assert]: https://matrix.org/docs/spec/application_service/r0.1.2#identity-assertion
-    fn try_into_http_request_with_user_id<T: Default + BufMut>(
-        self,
-        base_url: &str,
-        access_token: SendAccessToken<'_>,
-        user_id: &UserId,
-    ) -> Result<http::Request<T>, IntoHttpError> {
-        let mut http_request = self.try_into_http_request(base_url, access_token)?;
-        let user_id_query = s3ers_serde::urlencoded::to_string(&[("user_id", user_id)])?;
-
-        let uri = http_request.uri().to_owned();
-        let mut parts = uri.into_parts();
-
-        let path_and_query_with_user_id = match &parts.path_and_query {
-            Some(path_and_query) => match path_and_query.query() {
-                Some(_) => format!("{}&{}", path_and_query, user_id_query),
-                None => format!("{}?{}", path_and_query, user_id_query),
-            },
-            None => format!("/?{}", user_id_query),
-        };
-
-        parts.path_and_query =
-            Some(path_and_query_with_user_id.try_into().map_err(http::Error::from)?);
-
-        *http_request.uri_mut() = parts.try_into().map_err(http::Error::from)?;
-
-        Ok(http_request)
-    }
-}
-
-impl<T: OutgoingRequest> OutgoingRequestAppserviceExt for T {}
 
 /// A request type for a Matrix API endpoint, used for receiving requests.
 pub trait IncomingRequest: Sized {

@@ -11,15 +11,14 @@ use s3ers_api::{
     AuthScheme, EndpointError, IncomingRequest, IncomingResponse, Metadata, OutgoingRequest,
     OutgoingResponse, SendAccessToken,
 };
-use s3ers_identifiers::{RoomAliasId, RoomId};
 use s3ers_serde::Outgoing;
 use serde::{Deserialize, Serialize};
 
 /// A request to create a new room alias.
 #[derive(Debug)]
 pub struct Request {
-    pub room_id: Box<RoomId>,         // body
-    pub room_alias: Box<RoomAliasId>, // path
+    pub room_id: Box<str>,         // body
+    pub room_alias: Box<str>, // path
 }
 
 impl Outgoing for Request {
@@ -88,7 +87,7 @@ impl IncomingRequest for Request {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct RequestBody {
-    room_id: Box<RoomId>,
+    room_id: Box<str>,
 }
 
 /// The response to a request to create a new room alias.

@@ -8,7 +8,6 @@ pub struct OtherThing<'t> {
 
 mod empty_response {
     use s3ers_api::s3ers_api;
-    use s3ers_identifiers::{RoomAliasId, RoomId};
 
     s3ers_api! {
         metadata: {
@@ -23,10 +22,10 @@ mod empty_response {
         request: {
             /// The room alias to set.
             #[s3ers_api(path)]
-            pub room_alias: &'a RoomAliasId,
+            pub room_alias: &'a str,
 
             /// The room ID to set.
-            pub room_id: &'a RoomId,
+            pub room_id: &'a str,
         }
 
         response: {}
@@ -35,7 +34,6 @@ mod empty_response {
 
 mod nested_types {
     use s3ers_api::s3ers_api;
-    use s3ers_identifiers::RoomAliasId;
 
     s3ers_api! {
         metadata: {
@@ -49,10 +47,10 @@ mod nested_types {
 
         request: {
             /// The room alias to set.
-            pub room_alias: &'a [Option<&'a RoomAliasId>],
+            pub room_alias: &'a [Option<&'a String>],
 
             /// The room ID to set.
-            pub room_id: &'b [Option<Option<&'a s3ers_identifiers::DeviceId>>],
+            pub room_id: &'b [Option<Option<&'a String>>],
         }
 
         response: {}

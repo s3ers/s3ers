@@ -188,9 +188,10 @@ pub enum DeserializationError {
     #[error("{0}")]
     Query(#[from] s3ers_serde::urlencoded::de::Error),
 
-    /// Got an invalid identifier.
-    #[error("{0}")]
-    Ident(#[from] s3ers_identifiers::Error),
+    // TODO(risson)
+    // Got an invalid identifier.
+    // #[error("{0}")]
+    // Ident(#[from] s3ers_identifiers::Error),
 
     /// Header value deserialization failed.
     #[error("{0}")]

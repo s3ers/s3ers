@@ -1,6 +1,5 @@
 use s3ers_api::s3ers_api;
 use s3ers_serde::Raw;
-use s3ers_events::{tag::TagEvent, AnyRoomEvent};
 
 s3ers_api! {
     metadata: {
@@ -43,10 +42,10 @@ s3ers_api! {
         pub optional_flag: Option<bool>,
 
         // Use `Raw` instead of the actual event to allow additional fields to be sent...
-        pub event: Raw<TagEvent>,
+        pub event: Raw<String>,
 
         // ... and to allow unknown events when the endpoint deals with event collections.
-        pub list_of_events: Vec<Raw<AnyRoomEvent>>,
+        pub list_of_events: Vec<Raw<String>>,
     }
 }
 
