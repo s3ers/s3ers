@@ -1,0 +1,32 @@
+[package]
+authors = [
+    "Marc 'risson' Schmitt <marc.schmitt@risson.space>",
+    "Sevan 'Byh0ki' Murriguian-Watrin <murrig_s@epita.fr>",
+]
+categories = ["api-bindings", "filesystem", "web-programming"]
+description = "An S3 library."
+homepage = "https://gitlab.com/s3ers/s3ers"
+keywords = ["aws", "s3"]
+license-file = "../../LICENSE"
+name = "s3ers-api-macros"
+publish = false # this is not ready yet
+readme = "../../README.md"
+repository = "https://gitlab.com/s3ers/s3ers"
+version = "0.0.1"
+edition = "2021"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = []
+
+[dependencies]
+bytes = "*"
+http = "*"
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+thiserror = "*"
+
+[dev-dependencies]
