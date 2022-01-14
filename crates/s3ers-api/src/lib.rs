@@ -34,7 +34,6 @@ use http::Method;
 ///         method: http::Method,
 ///         name: &'static str,
 ///         path: &'static str,
-///         rate_limited: bool,
 ///         authentication: s3ers_api::AuthScheme,
 ///     }
 ///
@@ -72,7 +71,6 @@ use http::Method;
 ///   the path that are parameterized can indicate a variable by using a Rust identifier
 ///   prefixed with a colon, e.g. `/foo/:some_parameter`. A corresponding query string
 ///   parameter will be expected in the request struct (see below for details).
-/// * `rate_limited`: Whether or not the endpoint enforces rate limiting on requests.
 /// * `authentication`: What authentication scheme the endpoint uses.
 ///
 /// ## Request
@@ -136,7 +134,6 @@ use http::Method;
 ///             method: POST,
 ///             name: "some_endpoint",
 ///             path: "/_matrix/some/endpoint/:baz",
-///             rate_limited: false,
 ///             authentication: None,
 ///         }
 ///
@@ -177,7 +174,6 @@ use http::Method;
 ///             method: PUT,
 ///             name: "newtype_body_endpoint",
 ///             path: "/_matrix/some/newtype/body/endpoint",
-///             rate_limited: false,
 ///             authentication: None,
 ///         }
 ///
@@ -369,9 +365,6 @@ pub struct Metadata {
     /// The path of this endpoint's URL, with variable names where path parameters should be filled
     /// in during a request.
     pub path: &'static str,
-
-    /// Whether or not this endpoint is rate limited by the server.
-    pub rate_limited: bool,
 
     /// What authentication scheme the server uses for this endpoint.
     pub authentication: AuthScheme,

@@ -6,7 +6,6 @@ s3ers_api! {
         method: GET,
         name: "no_fields",
         path: "/_matrix/my/endpoint",
-        rate_limited: false,
         authentication: None,
     }
 

@@ -11,7 +11,6 @@ s3ers_api! {
         method: POST,
         name: "my_endpoint",
         path: "/_matrix/foo/:bar",
-        rate_limited: false,
         authentication: None,
     }
 

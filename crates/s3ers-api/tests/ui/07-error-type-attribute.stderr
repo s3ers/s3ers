@@ -1,5 +1,5 @@
 error: unexpected token
-  --> $DIR/07-error-type-attribute.rs:17:5
+  --> $DIR/07-error-type-attribute.rs:16:5
    |
-17 |     #[derive(Default)]
+16 |     #[derive(Default)]
    |     ^

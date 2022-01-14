@@ -13,7 +13,6 @@ mod newtype_body {
             method: POST,
             name: "my_endpoint",
             path: "/_matrix/foo/:bar/",
-            rate_limited: false,
             authentication: None,
         }
 
@@ -50,7 +49,6 @@ mod raw_body {
             method: POST,
             name: "my_endpoint",
             path: "/_matrix/foo/:bar/",
-            rate_limited: false,
             authentication: None,
         }
 
@@ -90,7 +88,6 @@ mod plain {
             method: POST,
             name: "my_endpoint",
             path: "/_matrix/foo/:bar/",
-            rate_limited: false,
             authentication: None,
         }
 

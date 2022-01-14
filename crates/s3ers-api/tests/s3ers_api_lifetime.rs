@@ -15,7 +15,6 @@ mod empty_response {
             method: PUT,
             name: "create_alias",
             path: "/_matrix/client/r0/directory/room/:room_alias",
-            rate_limited: false,
             authentication: AccessToken,
         }
 
@@ -41,7 +40,6 @@ mod nested_types {
             method: PUT,
             name: "create_alias",
             path: "/_matrix/client/r0/directory/room/:room_alias",
-            rate_limited: false,
             authentication: AccessToken,
         }
 
@@ -68,7 +66,6 @@ mod full_request_response {
             method: POST,
             name: "no_fields",
             path: "/_matrix/my/endpoint/:thing",
-            rate_limited: false,
             authentication: None,
         }
 
@@ -100,7 +97,6 @@ mod full_request_response_with_query_map {
             method: GET,
             name: "no_fields",
             path: "/_matrix/my/endpoint/:thing",
-            rate_limited: false,
             authentication: None,
         }
 
@@ -132,7 +128,6 @@ mod query_fields {
             method: GET,
             name: "get_public_rooms",
             path: "/_matrix/client/r0/publicRooms",
-            rate_limited: false,
             authentication: None,
         }
 

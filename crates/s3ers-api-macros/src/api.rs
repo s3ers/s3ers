@@ -48,18 +48,6 @@ impl Api {
         let method = &metadata.method;
         let name = &metadata.name;
         let path = &metadata.path;
-        let rate_limited: TokenStream = metadata
-            .rate_limited
-            .iter()
-            .map(|r| {
-                let attrs = &r.attrs;
-                let value = &r.value;
-                quote! {
-                    #( #attrs )*
-                    rate_limited: #value,
-                }
-            })
-            .collect();
         let authentication: TokenStream = self
             .metadata
             .authentication
@@ -90,7 +78,6 @@ impl Api {
                 method: #http::Method::#method,
                 name: #name,
                 path: #path,
-                #rate_limited
                 #authentication
             };
 

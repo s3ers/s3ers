@@ -7,7 +7,6 @@ s3ers_api! {
         method: POST, // An `http::Method` constant. No imports required.
         name: "some_endpoint",
         path: "/_matrix/some/endpoint/:baz",
-        rate_limited: false,
         authentication: None,
     }
 

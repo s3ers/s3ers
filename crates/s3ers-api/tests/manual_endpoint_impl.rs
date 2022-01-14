@@ -30,7 +30,6 @@ const METADATA: Metadata = Metadata {
     method: Method::PUT,
     name: "create_alias",
     path: "/_matrix/client/r0/directory/room/:room_alias",
-    rate_limited: false,
     authentication: AuthScheme::None,
 };
 

@@ -6,7 +6,6 @@ s3ers_api! {
         method: GET,
         name: "invalid_path",
         path: "µ/°/§/€",
-        rate_limited: false,
         authentication: None,
     }
 
@@ -24,7 +23,6 @@ s3ers_api! {
         method: GET,
         name: "invalid_path",
         path: "path/to/invalid space/endpoint",
-        rate_limited: false,
         authentication: None,
     }
 

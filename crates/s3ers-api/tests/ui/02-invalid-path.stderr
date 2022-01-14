@@ -5,7 +5,7 @@ error: path may only contain printable ASCII characters with no spaces
   |               ^^^^^^^^^
 
 error: path may only contain printable ASCII characters with no spaces
-  --> $DIR/02-invalid-path.rs:26:15
+  --> $DIR/02-invalid-path.rs:25:15
    |
-26 |         path: "path/to/invalid space/endpoint",
+25 |         path: "path/to/invalid space/endpoint",
    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

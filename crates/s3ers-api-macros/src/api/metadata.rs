@@ -4,7 +4,7 @@ use quote::ToTokens;
 use syn::{
     braced,
     parse::{Parse, ParseStream},
-    Attribute, Ident, LitBool, LitStr, Token,
+    Attribute, Ident, LitStr, Token,
 };
 
 use crate::{auth_scheme::AuthScheme, util};
@@ -15,7 +15,6 @@ mod kw {
     syn::custom_keyword!(method);
     syn::custom_keyword!(name);
     syn::custom_keyword!(path);
-    syn::custom_keyword!(rate_limited);
     syn::custom_keyword!(authentication);
 }
 
@@ -41,9 +40,6 @@ pub struct Metadata {
 
     /// The path field.
     pub path: LitStr,
-
-    /// The rate_limited field.
-    pub rate_limited: Vec<MetadataField<LitBool>>,
 
     /// The authentication field.
     pub authentication: Vec<MetadataField<AuthScheme>>,
@@ -78,7 +74,6 @@ impl Parse for Metadata {
         let mut method = None;
         let mut name = None;
         let mut path = None;
-        let mut rate_limited = vec![];
         let mut authentication = vec![];
 
         for field_value in field_values {
@@ -87,9 +82,6 @@ impl Parse for Metadata {
                 FieldValue::Method(m) => set_field(&mut method, m)?,
                 FieldValue::Name(n) => set_field(&mut name, n)?,
                 FieldValue::Path(p) => set_field(&mut path, p)?,
-                FieldValue::RateLimited(value, attrs) => {
-                    rate_limited.push(MetadataField { attrs, value });
-                }
                 FieldValue::Authentication(value, attrs) => {
                     authentication.push(MetadataField { attrs, value });
                 }
@@ -104,11 +96,6 @@ impl Parse for Metadata {
             method: method.ok_or_else(|| missing_field("method"))?,
             name: name.ok_or_else(|| missing_field("name"))?,
             path: path.ok_or_else(|| missing_field("path"))?,
-            rate_limited: if rate_limited.is_empty() {
-                return Err(missing_field("rate_limited"));
-            } else {
-                rate_limited
-            },
             authentication: if authentication.is_empty() {
                 return Err(missing_field("authentication"));
             } else {
@@ -123,7 +110,6 @@ enum Field {
     Method,
     Name,
     Path,
-    RateLimited,
     Authentication,
 }
 
@@ -143,9 +129,6 @@ impl Parse for Field {
         } else if lookahead.peek(kw::path) {
             let _: kw::path = input.parse()?;
             Ok(Self::Path)
-        } else if lookahead.peek(kw::rate_limited) {
-            let _: kw::rate_limited = input.parse()?;
-            Ok(Self::RateLimited)
         } else if lookahead.peek(kw::authentication) {
             let _: kw::authentication = input.parse()?;
             Ok(Self::Authentication)
@@ -160,7 +143,6 @@ enum FieldValue {
     Method(Ident),
     Name(LitStr),
     Path(LitStr),
-    RateLimited(LitBool, Vec<Attribute>),
     Authentication(AuthScheme, Vec<Attribute>),
 }
 
@@ -194,7 +176,6 @@ impl Parse for FieldValue {
 
                 Self::Path(path)
             }
-            Field::RateLimited => Self::RateLimited(input.parse()?, attrs),
             Field::Authentication => Self::Authentication(input.parse()?, attrs),
         })
     }
