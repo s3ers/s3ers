@@ -29,6 +29,7 @@
             rust-bin.nightly.latest.default
             cargo-audit
             cargo-edit
+            cargo-expand
             cargo-flamegraph
             cargo-sort
             cargo-tarpaulin

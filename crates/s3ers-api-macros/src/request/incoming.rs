@@ -197,7 +197,7 @@ impl Request {
             quote! {
                 #[automatically_derived]
                 #[cfg(feature = "server")]
-                impl #s3ers_api::IncomingNoneAuthRequest for #incoming_request_type { }
+                impl #s3ers_api::IncomingNonAuthRequest for #incoming_request_type { }
             }
         });
 
@@ -208,7 +208,7 @@ impl Request {
                 type EndpointError = #error_ty;
                 type OutgoingResponse = Response;
 
-                const METADATA: #s3ers_api::Metadata = self.METADATA;
+                const METADATA: #s3ers_api::Metadata = self::METADATA;
 
                 fn try_from_http_request<T: ::std::convert::AsRef<[::std::primitive::u8]>>(request: #http::Request<T>) -> ::std::result::Result<Self, #s3ers_api::error::FromHttpRequestError> {
                     if request.method() != #http::Method::#method {
