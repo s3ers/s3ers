@@ -198,9 +198,7 @@ impl<S: Sink> PartSerializer<S> {
     where
         I: itoa::Integer,
     {
-        let mut buf = [b'\0'; 20];
-        let len = itoa::write(&mut buf[..], value).unwrap();
-        let part = unsafe { str::from_utf8_unchecked(&buf[0..len]) };
-        ser::Serializer::serialize_str(self, part)
+        let mut buf = itoa::Buffer::new();
+        ser::Serializer::serialize_str(self, buf.format(value))
     }
 }
