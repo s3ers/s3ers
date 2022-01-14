@@ -6,6 +6,7 @@ use syn::{
 };
 
 /// Value type used for request and response struct attributes
+#[allow(clippy::large_enum_variant)]
 pub enum MetaValue {
     Lit(Lit),
     Type(Type),
