@@ -1,6 +1,6 @@
 use bytes::BufMut;
 use s3ers_api::{
-    error::{FromHttpResponseError, IntoHttpError, MatrixError},
+    error::{FromHttpResponseError, IntoHttpError, SError},
     s3ers_api, IncomingResponse, OutgoingResponse,
 };
 use s3ers_serde::Outgoing;
@@ -25,11 +25,11 @@ s3ers_api! {
 pub struct Response;
 
 impl IncomingResponse for Response {
-    type EndpointError = MatrixError;
+    type EndpointError = SError;
 
     fn try_from_http_response<T: AsRef<[u8]>>(
         _: http::Response<T>,
-    ) -> Result<Self, FromHttpResponseError<MatrixError>> {
+    ) -> Result<Self, FromHttpResponseError<SError>> {
         todo!()
     }
 }

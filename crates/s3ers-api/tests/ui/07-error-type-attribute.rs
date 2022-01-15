@@ -14,7 +14,7 @@ s3ers_api! {
     response: {}
 
     #[derive(Default)]
-    error: s3ers_api::error::MatrixError
+    error: s3ers_api::error::SError
 }
 
 fn main() {}

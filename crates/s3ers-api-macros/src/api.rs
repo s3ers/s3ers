@@ -64,7 +64,7 @@ impl Api {
 
         let error_ty = self
             .error_ty
-            .map_or_else(|| quote! { #s3ers_api::error::MatrixError }, |err_ty| quote! { #err_ty });
+            .map_or_else(|| quote! { #s3ers_api::error::SError }, |err_ty| quote! { #err_ty });
 
         let request = self.request.map(|req| req.expand(metadata, &error_ty, &s3ers_api));
         let response = self.response.map(|res| res.expand(metadata, &error_ty, &s3ers_api));

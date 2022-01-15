@@ -7,7 +7,7 @@ use std::convert::TryFrom;
 use bytes::BufMut;
 use http::{header::CONTENT_TYPE, method::Method};
 use s3ers_api::{
-    error::{FromHttpRequestError, FromHttpResponseError, IntoHttpError, MatrixError, ServerError},
+    error::{FromHttpRequestError, FromHttpResponseError, IntoHttpError, SError, ServerError},
     AuthScheme, EndpointError, IncomingRequest, IncomingResponse, Metadata, OutgoingRequest,
     OutgoingResponse,
 };
@@ -34,7 +34,7 @@ const METADATA: Metadata = Metadata {
 };
 
 impl OutgoingRequest for Request {
-    type EndpointError = MatrixError;
+    type EndpointError = SError;
     type IncomingResponse = Response;
 
     const METADATA: Metadata = METADATA;
@@ -61,7 +61,7 @@ impl OutgoingRequest for Request {
 }
 
 impl IncomingRequest for Request {
-    type EndpointError = MatrixError;
+    type EndpointError = SError;
     type OutgoingResponse = Response;
 
     const METADATA: Metadata = METADATA;
@@ -97,16 +97,16 @@ impl Outgoing for Response {
 }
 
 impl IncomingResponse for Response {
-    type EndpointError = MatrixError;
+    type EndpointError = SError;
 
     fn try_from_http_response<T: AsRef<[u8]>>(
         http_response: http::Response<T>,
-    ) -> Result<Self, FromHttpResponseError<MatrixError>> {
+    ) -> Result<Self, FromHttpResponseError<SError>> {
         if http_response.status().as_u16() < 400 {
             Ok(Response)
         } else {
             Err(FromHttpResponseError::Http(ServerError::Known(
-                <MatrixError as EndpointError>::try_from_http_response(http_response)?,
+                <SError as EndpointError>::try_from_http_response(http_response)?,
             )))
         }
     }

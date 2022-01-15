@@ -47,7 +47,7 @@ use http::Method;
 ///         // in the response from this API endpoint.
 ///     }
 ///
-///     // The error returned when a response fails, defaults to `S3Error`.
+///     // The error returned when a response fails, defaults to `SError`.
 ///     error: path::to::Error
 /// }
 /// ```

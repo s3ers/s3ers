@@ -15,7 +15,7 @@ use crate::{EndpointError, OutgoingResponse};
 /// Note that individual `s3ers-*-api` crates may provide more specific error types.
 #[allow(clippy::exhaustive_structs)]
 #[derive(Clone, Debug)]
-pub struct MatrixError {
+pub struct SError {
     /// The http response's status code.
     pub status_code: http::StatusCode,
 
@@ -23,16 +23,16 @@ pub struct MatrixError {
     pub body: JsonValue,
 }
 
-impl fmt::Display for MatrixError {
+impl fmt::Display for SError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}] ", self.status_code.as_u16())?;
         fmt::Display::fmt(&self.body, f)
     }
 }
 
-impl StdError for MatrixError {}
+impl StdError for SError {}
 
-impl OutgoingResponse for MatrixError {
+impl OutgoingResponse for SError {
     fn try_into_http_response<T: Default + BufMut>(
         self,
     ) -> Result<http::Response<T>, IntoHttpError> {
@@ -44,7 +44,7 @@ impl OutgoingResponse for MatrixError {
     }
 }
 
-impl EndpointError for MatrixError {
+impl EndpointError for SError {
     fn try_from_http_response<T: AsRef<[u8]>>(
         response: http::Response<T>,
     ) -> Result<Self, DeserializationError> {
