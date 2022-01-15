@@ -37,7 +37,7 @@ impl<'de> Deserialize<'de> for Empty {
 /// Serde serialization and deserialization functions that map a `Vec<T>` to a
 /// `BTreeMap<T, Empty>`.
 ///
-/// The Matrix spec sometimes specifies lists as hash maps so the list entries
+/// The S3 spec sometimes specifies lists as hash maps so the list entries
 /// can be expanded with attributes without breaking compatibility. As that
 /// would be a breaking change for s3ers's event types anyway, we convert them to
 /// `Vec`s for simplicity, using this module.

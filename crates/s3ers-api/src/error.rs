@@ -1,6 +1,6 @@
 //! This module contains types for all kinds of errors that can occur when
 //! converting between http requests / responses and s3ers's representation of
-//! matrix API requests / responses.
+//! S3 API requests / responses.
 
 use std::{error::Error as StdError, fmt};
 
@@ -10,7 +10,7 @@ use thiserror::Error;
 
 use crate::{EndpointError, OutgoingResponse};
 
-/// A general-purpose Matrix error type consisting of an HTTP status code and a JSON body.
+/// A general-purpose S3 error type consisting of an HTTP status code and a JSON body.
 ///
 /// Note that individual `s3ers-*-api` crates may provide more specific error types.
 #[allow(clippy::exhaustive_structs)]

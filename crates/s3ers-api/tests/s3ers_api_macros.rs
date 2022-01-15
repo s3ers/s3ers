@@ -9,7 +9,7 @@ pub mod some_endpoint {
             description: "Does something.",
             method: POST, // An `http::Method` constant. No imports required.
             name: "some_endpoint",
-            path: "/_matrix/some/endpoint/:user",
+            path: "/some/endpoint/:user",
 
             #[cfg(all())]
             authentication: AwsSignatureV4Header,
@@ -69,7 +69,7 @@ pub mod newtype_body_endpoint {
             description: "Does something.",
             method: PUT,
             name: "newtype_body_endpoint",
-            path: "/_matrix/some/newtype/body/endpoint",
+            path: "/some/newtype/body/endpoint",
             authentication: None,
         }
 
@@ -98,7 +98,7 @@ pub mod raw_body_endpoint {
             description: "Does something.",
             method: PUT,
             name: "newtype_body_endpoint",
-            path: "/_matrix/some/newtype/body/endpoint",
+            path: "/some/newtype/body/endpoint",
             authentication: None,
         }
 
@@ -122,7 +122,7 @@ pub mod query_map_endpoint {
             description: "Does something.",
             method: GET,
             name: "newtype_body_endpoint",
-            path: "/_matrix/some/query/map/endpoint",
+            path: "/some/query/map/endpoint",
             authentication: None,
         }
 

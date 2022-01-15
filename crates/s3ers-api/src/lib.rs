@@ -1,9 +1,9 @@
 #![doc(html_favicon_url = "https://www.s3ers.io/favicon.ico")]
 #![doc(html_logo_url = "https://www.s3ers.io/images/logo.png")]
 //! Core types used to define the requests and responses for each endpoint in the various
-//! [Matrix API specifications][apis].
+//! [S3 API specifications][apis].
 //!
-//! When implementing a new Matrix API, each endpoint has a request type which implements
+//! When implementing a new S3 API, each endpoint has a request type which implements
 //! `Endpoint`, and a response type connected via an associated type.
 //!
 //! An implementation of `Endpoint` contains all the information about the HTTP method, the path and
@@ -11,7 +11,7 @@
 //! Such types can then be used by client code to make requests, and by server code to fulfill
 //! those requests.
 //!
-//! [apis]: https://matrix.org/docs/spec/#matrix-apis
+//! [apis]: https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html
 
 #![warn(missing_docs)]
 
@@ -47,7 +47,7 @@ use http::Method;
 ///         // in the response from this API endpoint.
 ///     }
 ///
-///     // The error returned when a response fails, defaults to `MatrixError`.
+///     // The error returned when a response fails, defaults to `S3Error`.
 ///     error: path::to::Error
 /// }
 /// ```
@@ -133,7 +133,7 @@ use http::Method;
 ///             description: "Does something.",
 ///             method: POST,
 ///             name: "some_endpoint",
-///             path: "/_matrix/some/endpoint/:baz",
+///             path: "/some/endpoint/:baz",
 ///             authentication: None,
 ///         }
 ///
@@ -173,7 +173,7 @@ use http::Method;
 ///             description: "Does something.",
 ///             method: PUT,
 ///             name: "newtype_body_endpoint",
-///             path: "/_matrix/some/newtype/body/endpoint",
+///             path: "/some/newtype/body/endpoint",
 ///             authentication: None,
 ///         }
 ///
@@ -207,7 +207,7 @@ pub mod exports {
 
 use error::{FromHttpRequestError, FromHttpResponseError, IntoHttpError};
 
-/// A request type for a Matrix API endpoint, used for sending requests.
+/// A request type for a S3 API endpoint, used for sending requests.
 pub trait OutgoingRequest: Sized {
     /// A type capturing the expected error conditions the server can return.
     type EndpointError: EndpointError;
@@ -224,7 +224,7 @@ pub trait OutgoingRequest: Sized {
     /// also fail with a serialization error in case of bugs in s3ers though.
     ///
     /// The endpoints path will be appended to the given `base_url`, for example
-    /// `https://matrix.org`. Since all paths begin with a slash, it is not necessary for the
+    /// `https://s3.aws.amazon.com`. Since all paths begin with a slash, it is not necessary for the
     /// `base_url` to have a trailing slash. If it has one however, it will be ignored.
     fn try_into_http_request<T: Default + BufMut>(
         self,
@@ -232,7 +232,7 @@ pub trait OutgoingRequest: Sized {
     ) -> Result<http::Request<T>, IntoHttpError>;
 }
 
-/// A response type for a Matrix API endpoint, used for receiving responses.
+/// A response type for a S3 API endpoint, used for receiving responses.
 pub trait IncomingResponse: Sized {
     /// A type capturing the expected error conditions the server can return.
     type EndpointError: EndpointError;
@@ -243,7 +243,7 @@ pub trait IncomingResponse: Sized {
     ) -> Result<Self, FromHttpResponseError<Self::EndpointError>>;
 }
 
-/// A request type for a Matrix API endpoint, used for receiving requests.
+/// A request type for a S3 API endpoint, used for receiving requests.
 pub trait IncomingRequest: Sized {
     /// A type capturing the error conditions that can be returned in the response.
     type EndpointError: EndpointError;
@@ -260,7 +260,7 @@ pub trait IncomingRequest: Sized {
     ) -> Result<Self, FromHttpRequestError>;
 }
 
-/// A request type for a Matrix API endpoint, used for sending responses.
+/// A request type for a S3 API endpoint, used for sending responses.
 pub trait OutgoingResponse {
     /// Tries to convert this response into an `http::Response`.
     ///

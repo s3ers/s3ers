@@ -12,7 +12,7 @@ use serde_json::value::{to_raw_value as to_raw_json_value, RawValue as RawJsonVa
 
 use crate::cow::MyCowStr;
 
-/// A wrapper around `Box<RawValue>`, to be used in place of any type in the Matrix endpoint
+/// A wrapper around `Box<RawValue>`, to be used in place of any type in the S3 endpoint
 /// definition to allow request and response types to contain that said type represented by
 /// the generic argument `Ev`.
 ///
@@ -81,11 +81,11 @@ impl<T> Raw<T> {
     /// # Example
     ///
     /// ```no_run
-    /// # type CustomMatrixEvent = ();
+    /// # type CustomS3Event = ();
     /// # fn foo() -> serde_json::Result<()> {
     /// # let raw_event: s3ers_serde::Raw<()> = todo!();
-    /// if raw_event.get_field::<String>("type")?.as_deref() == Some("org.custom.matrix.event") {
-    ///     let event = raw_event.deserialize_as::<CustomMatrixEvent>()?;
+    /// if raw_event.get_field::<String>("type")?.as_deref() == Some("org.custom.s3.event") {
+    ///     let event = raw_event.deserialize_as::<CustomS3Event>()?;
     ///     // ...
     /// }
     /// # Ok(())

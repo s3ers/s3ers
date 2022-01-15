@@ -10,7 +10,7 @@ s3ers_api! {
         description: "Does something.",
         method: POST, // An `http::Method` constant. No imports required.
         name: "some_endpoint",
-        path: "/_matrix/some/endpoint/:baz",
+        path: "/some/endpoint/:baz",
         authentication: None,
     }
 

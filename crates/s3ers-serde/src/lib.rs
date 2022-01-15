@@ -61,7 +61,7 @@ pub fn is_true(b: &bool) -> bool {
     *b
 }
 
-/// A type that can be sent to another party that understands the matrix protocol.
+/// A type that can be sent to another party that understands the S3 protocol.
 ///
 /// If any of the fields of `Self` don't implement serde's `Deserialize`, you can derive this trait
 /// to generate a corresponding 'Incoming' type that supports deserialization. This is useful for

@@ -12,7 +12,7 @@ mod newtype_body {
             description: "Does something.",
             method: POST,
             name: "my_endpoint",
-            path: "/_matrix/foo/:bar/",
+            path: "/foo/:bar/",
             authentication: None,
         }
 
@@ -48,7 +48,7 @@ mod raw_body {
             description: "Does something.",
             method: POST,
             name: "my_endpoint",
-            path: "/_matrix/foo/:bar/",
+            path: "/foo/:bar/",
             authentication: None,
         }
 
@@ -87,7 +87,7 @@ mod plain {
             description: "Does something.",
             method: POST,
             name: "my_endpoint",
-            path: "/_matrix/foo/:bar/",
+            path: "/foo/:bar/",
             authentication: None,
         }
 

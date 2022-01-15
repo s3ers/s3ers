@@ -5,7 +5,7 @@ s3ers_api! {
         description: "Does something.",
         method: GET,
         name: "no_fields",
-        path: "/_matrix/my/endpoint",
+        path: "/my/endpoint",
         authentication: None,
     }
 

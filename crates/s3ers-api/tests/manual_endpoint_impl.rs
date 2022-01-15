@@ -1,4 +1,4 @@
-//! PUT /_matrix/client/r0/directory/room/:room_alias
+//! PUT /client/r0/directory/room/:room_alias
 
 #![allow(clippy::exhaustive_structs)]
 
@@ -29,7 +29,7 @@ const METADATA: Metadata = Metadata {
     description: "Add an alias to a room.",
     method: Method::PUT,
     name: "create_alias",
-    path: "/_matrix/client/r0/directory/room/:room_alias",
+    path: "/client/r0/directory/room/:room_alias",
     authentication: AuthScheme::None,
 };
 

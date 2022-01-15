@@ -15,12 +15,6 @@ pub fn import_s3ers_serde() -> TokenStream {
     } else if let Ok(FoundCrate::Name(name)) = crate_name("s3ers") {
         let import = format_ident!("{}", name);
         quote! { ::#import::serde }
-    } else if let Ok(FoundCrate::Name(name)) = crate_name("matrix-sdk") {
-        let import = format_ident!("{}", name);
-        quote! { ::#import::s3ers::serde }
-    } else if let Ok(FoundCrate::Name(name)) = crate_name("matrix-sdk-appservice") {
-        let import = format_ident!("{}", name);
-        quote! { ::#import::s3ers::serde }
     } else {
         quote! { ::s3ers_serde }
     }

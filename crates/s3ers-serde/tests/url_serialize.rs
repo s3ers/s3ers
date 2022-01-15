@@ -118,10 +118,10 @@ fn serialize_map() {
     let mut s = std::collections::BTreeMap::new();
     s.insert("hello", "world");
     s.insert("seri", "alize");
-    s.insert("matrix", "s3ers");
+    s.insert("s3", "s3ers");
 
     let encoded = urlencoded::to_string(s).unwrap();
-    assert_eq!("hello=world&matrix=s3ers&seri=alize", encoded);
+    assert_eq!("hello=world&s3=s3ers&seri=alize", encoded);
 }
 
 #[derive(Serialize)]

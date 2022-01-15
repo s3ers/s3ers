@@ -13,7 +13,7 @@ use super::Error;
 /// The inner type of `CanonicalJsonValue::Object`.
 pub type Object = BTreeMap<String, CanonicalJsonValue>;
 
-/// Represents a canonical JSON value as per the Matrix specification.
+/// Represents a canonical JSON value as per the S3 specification.
 #[derive(Clone, Eq, PartialEq)]
 #[allow(clippy::exhaustive_enums)]
 pub enum CanonicalJsonValue {

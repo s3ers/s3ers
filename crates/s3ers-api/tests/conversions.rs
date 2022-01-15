@@ -9,7 +9,7 @@ s3ers_api! {
         description: "Does something.",
         method: POST,
         name: "my_endpoint",
-        path: "/_matrix/foo/:bar",
+        path: "/foo/:bar",
         authentication: None,
     }
 
