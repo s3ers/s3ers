@@ -1,0 +1,70 @@
+[package]
+authors = [
+    "Marc 'risson' Schmitt <marc.schmitt@risson.space>",
+    "Sevan 'Byh0ki' Murriguian-Watrin <murrig_s@epita.fr>",
+]
+categories = ["api-bindings", "filesystem", "web-programming"]
+description = "Types and traits for working with the S3 protocol."
+homepage = "https://gitlab.com/s3ers/s3ers"
+keywords = ["aws", "s3", "s3ers"]
+license-file = "../../LICENSE"
+name = "s3ers"
+readme = "../../README.md"
+repository = "https://gitlab.com/s3ers/s3ers"
+version = "0.0.1"
+edition = "2021"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+api = ["s3ers-api"]
+client = ["s3ers-client"]
+
+# s3ers-client feature flags
+client-ext-s3ers-api = ["client", "s3ers-client/s3-api"]
+client-hyper = ["client", "s3ers-client/hyper"]
+client-hyper-native-tls = ["client", "s3ers-client/hyper-native-tls"]
+client-isahc = ["client", "s3ers-client/isahc"]
+client-reqwest = ["client", "s3ers-client/reqwest"]
+client-reqwest-native-tls = ["client", "s3ers-client/reqwest-native-tls"]
+client-reqwest-native-tls-vendored = ["client", "s3ers-client/reqwest-native-tls-vendored"]
+client-reqwest-rustls-manual-roots = ["client", "s3ers-client/reqwest-rustls-manual-roots"]
+client-reqwest-rustls-webpki-roots = ["client", "s3ers-client/reqwest-rustls-webpki-roots"]
+client-reqwest-rustls-native-roots = ["client", "s3ers-client/reqwest-rustls-native-roots"]
+
+s3-api-c = ["api", "s3ers-s3-api/client"]
+s3-api-s = ["api", "s3ers-s3-api/server"]
+s3-api = ["s3-api-c", "s3-api-s"]
+
+# Everything except compat and unstable features
+full = [
+    "api",
+    "client",
+    "client-ext-s3ers-api",
+]
+
+# unstable: by using any of these, you opt out of all semver guarantees s3ers
+#           otherwise provides!
+unstable-exhaustive-types = [
+    "s3ers-s3-api/unstable-exhaustive-types",
+]
+
+[dependencies]
+assign = "1.1.1"
+js_int = "0.2.0"
+
+s3ers-serde = { path = "../s3ers-serde", version = "0.0.1" }
+
+s3ers-client = { path = "../s3ers-client", version = "0.0.1", optional = true }
+
+s3ers-api = { path = "../s3ers-api", version = "0.0.1", optional = true }
+s3ers-s3-api = { path = "../s3ers-s3-api", version = "0.0.1", optional = true }
+
+[dev-dependencies]
+anyhow = "1.0.37"
+isahc = "1.3.1"
+serde = { version = "1.0.118", features = ["derive"] }
+tokio = { version = "1.0.1", features = ["macros", "rt"] }
+tokio-stream = { version = "0.1.1", default-features = false }
