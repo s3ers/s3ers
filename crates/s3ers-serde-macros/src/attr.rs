@@ -39,10 +39,8 @@ impl Parse for RenameAllAttr {
         let _: kw::rename_all = input.parse()?;
         let _: Token![=] = input.parse()?;
         let s: LitStr = input.parse()?;
-        Ok(Self(
-            s.value()
-                .parse()
-                .map_err(|_| syn::Error::new_spanned(s, "invalid value for rename_all"))?,
-        ))
+        Ok(Self(s.value().parse().map_err(|_| {
+            syn::Error::new_spanned(s, "invalid value for rename_all")
+        })?))
     }
 }

@@ -1,8 +1,6 @@
 #![allow(clippy::exhaustive_structs)]
 
-use s3ers_api::{
-    s3ers_api, IncomingRequest as _, OutgoingRequest as _,
-};
+use s3ers_api::{s3ers_api, IncomingRequest as _, OutgoingRequest as _};
 
 s3ers_api! {
     metadata: {

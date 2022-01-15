@@ -10,7 +10,8 @@ pub struct Base64<B = Vec<u8>> {
 }
 
 // See https://github.com/matrix-org/matrix-doc/issues/3211
-const BASE64_CONFIG: base64::Config = base64::STANDARD_NO_PAD.decode_allow_trailing_bits(true);
+const BASE64_CONFIG: base64::Config =
+    base64::STANDARD_NO_PAD.decode_allow_trailing_bits(true);
 
 impl<B: AsRef<[u8]>> Base64<B> {
     /// Create a `Base64` instance from raw bytes, to be base64-encoded in serialialization.
@@ -36,7 +37,9 @@ impl Base64 {
     }
 
     /// Parse some base64-encoded data to create a `Base64` instance.
-    pub fn parse(encoded: impl AsRef<[u8]>) -> Result<Self, base64::DecodeError> {
+    pub fn parse(
+        encoded: impl AsRef<[u8]>,
+    ) -> Result<Self, base64::DecodeError> {
         base64::decode_config(encoded, BASE64_CONFIG).map(Self::new)
     }
 }

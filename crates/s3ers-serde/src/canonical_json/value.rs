@@ -175,7 +175,9 @@ impl fmt::Debug for CanonicalJsonValue {
             Self::Null => formatter.debug_tuple("Null").finish(),
             Self::Bool(v) => formatter.debug_tuple("Bool").field(&v).finish(),
             Self::Integer(ref v) => fmt::Debug::fmt(v, formatter),
-            Self::String(ref v) => formatter.debug_tuple("String").field(v).finish(),
+            Self::String(ref v) => {
+                formatter.debug_tuple("String").field(v).finish()
+            }
             Self::Array(ref v) => {
                 formatter.write_str("Array(")?;
                 fmt::Debug::fmt(v, formatter)?;
@@ -214,9 +216,11 @@ impl TryFrom<JsonValue> for CanonicalJsonValue {
                 Int::try_from(num.as_i64().ok_or(Error::IntConvert)?)
                     .map_err(|_| Error::IntConvert)?,
             ),
-            JsonValue::Array(vec) => {
-                Self::Array(vec.into_iter().map(TryInto::try_into).collect::<Result<Vec<_>, _>>()?)
-            }
+            JsonValue::Array(vec) => Self::Array(
+                vec.into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, _>>()?,
+            ),
             JsonValue::String(string) => Self::String(string),
             JsonValue::Object(obj) => Self::Object(
                 obj.into_iter()
@@ -232,14 +236,16 @@ impl From<CanonicalJsonValue> for JsonValue {
     fn from(val: CanonicalJsonValue) -> Self {
         match val {
             CanonicalJsonValue::Bool(b) => Self::Bool(b),
-            CanonicalJsonValue::Integer(int) => Self::Number(i64::from(int).into()),
+            CanonicalJsonValue::Integer(int) => {
+                Self::Number(i64::from(int).into())
+            }
             CanonicalJsonValue::String(string) => Self::String(string),
             CanonicalJsonValue::Array(vec) => {
                 Self::Array(vec.into_iter().map(Into::into).collect())
             }
-            CanonicalJsonValue::Object(obj) => {
-                Self::Object(obj.into_iter().map(|(k, v)| (k, v.into())).collect())
-            }
+            CanonicalJsonValue::Object(obj) => Self::Object(
+                obj.into_iter().map(|(k, v)| (k, v.into())).collect(),
+            ),
             CanonicalJsonValue::Null => Self::Null,
         }
     }
@@ -324,10 +330,13 @@ mod tests {
 
     #[test]
     fn to_string() {
-        const CANONICAL_STR: &str = r#"{"city":"London","street":"10 Downing Street"}"#;
+        const CANONICAL_STR: &str =
+            r#"{"city":"London","street":"10 Downing Street"}"#;
 
         let json: CanonicalJsonValue =
-            json!({ "city": "London", "street": "10 Downing Street" }).try_into().unwrap();
+            json!({ "city": "London", "street": "10 Downing Street" })
+                .try_into()
+                .unwrap();
 
         assert_eq!(format!("{}", json), CANONICAL_STR);
         assert_eq!(format!("{:#}", json), CANONICAL_STR);

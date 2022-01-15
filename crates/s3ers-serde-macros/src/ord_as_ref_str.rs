@@ -1,7 +1,9 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 
-pub fn expand_partial_ord_as_ref_str(ident: &Ident) -> syn::Result<TokenStream> {
+pub fn expand_partial_ord_as_ref_str(
+    ident: &Ident,
+) -> syn::Result<TokenStream> {
     Ok(quote! {
         #[automatically_derived]
         impl ::std::cmp::PartialOrd for #ident {

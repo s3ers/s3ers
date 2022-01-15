@@ -16,7 +16,9 @@
 #![warn(missing_docs)]
 
 #[cfg(not(all(feature = "client", feature = "server")))]
-compile_error!("s3ers_api's Cargo features only exist as a workaround are not meant to be disabled");
+compile_error!(
+    "s3ers_api's Cargo features only exist as a workaround are not meant to be disabled"
+);
 
 use std::error::Error as StdError;
 
@@ -272,7 +274,9 @@ pub trait OutgoingResponse {
 }
 
 /// Gives users the ability to define their own serializable / deserializable errors.
-pub trait EndpointError: OutgoingResponse + StdError + Sized + Send + 'static {
+pub trait EndpointError:
+    OutgoingResponse + StdError + Sized + Send + 'static
+{
     /// Tries to construct `Self` from an `http::Response`.
     ///
     /// This will always return `Err` variant when no `error` field is defined in
@@ -303,7 +307,6 @@ pub enum AuthScheme {
 
     /// Authentication is performed by setting the `X-Amz-Credential` query parameter.
     AwsSignatureV4QueryParams,
-
 }
 
 /// Metadata about an API endpoint.

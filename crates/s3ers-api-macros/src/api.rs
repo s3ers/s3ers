@@ -62,14 +62,20 @@ impl Api {
             })
             .collect();
 
-        let error_ty = self
-            .error_ty
-            .map_or_else(|| quote! { #s3ers_api::error::SError }, |err_ty| quote! { #err_ty });
+        let error_ty = self.error_ty.map_or_else(
+            || quote! { #s3ers_api::error::SError },
+            |err_ty| quote! { #err_ty },
+        );
 
-        let request = self.request.map(|req| req.expand(metadata, &error_ty, &s3ers_api));
-        let response = self.response.map(|res| res.expand(metadata, &error_ty, &s3ers_api));
+        let request = self
+            .request
+            .map(|req| req.expand(metadata, &error_ty, &s3ers_api));
+        let response = self
+            .response
+            .map(|res| res.expand(metadata, &error_ty, &s3ers_api));
 
-        let metadata_doc = format!("Metadata for the `{}` API endpoint.", name.value());
+        let metadata_doc =
+            format!("Metadata for the `{}` API endpoint.", name.value());
 
         quote! {
             #[doc = #metadata_doc]
@@ -126,11 +132,19 @@ impl Parse for Api {
             })
             .transpose()?;
 
-        Ok(Self { metadata, request, response, error_ty })
+        Ok(Self {
+            metadata,
+            request,
+            response,
+            error_ty,
+        })
     }
 }
 
-fn parse_request(input: ParseStream<'_>, attributes: Vec<Attribute>) -> syn::Result<Request> {
+fn parse_request(
+    input: ParseStream<'_>,
+    attributes: Vec<Attribute>,
+) -> syn::Result<Request> {
     let request_kw: kw::request = input.parse()?;
     let _: Token![:] = input.parse()?;
     let fields;
@@ -138,10 +152,17 @@ fn parse_request(input: ParseStream<'_>, attributes: Vec<Attribute>) -> syn::Res
 
     let fields = fields.parse_terminated::<_, Token![,]>(Field::parse_named)?;
 
-    Ok(Request { request_kw, attributes, fields })
+    Ok(Request {
+        request_kw,
+        attributes,
+        fields,
+    })
 }
 
-fn parse_response(input: ParseStream<'_>, attributes: Vec<Attribute>) -> syn::Result<Response> {
+fn parse_response(
+    input: ParseStream<'_>,
+    attributes: Vec<Attribute>,
+) -> syn::Result<Response> {
     let response_kw: kw::response = input.parse()?;
     let _: Token![:] = input.parse()?;
     let fields;
@@ -149,5 +170,9 @@ fn parse_response(input: ParseStream<'_>, attributes: Vec<Attribute>) -> syn::Re
 
     let fields = fields.parse_terminated::<_, Token![,]>(Field::parse_named)?;
 
-    Ok(Response { attributes, fields, response_kw })
+    Ok(Response {
+        attributes,
+        fields,
+        response_kw,
+    })
 }

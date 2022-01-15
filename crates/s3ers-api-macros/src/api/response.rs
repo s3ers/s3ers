@@ -2,7 +2,9 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{punctuated::Punctuated, spanned::Spanned, Attribute, Field, Ident, Token};
+use syn::{
+    punctuated::Punctuated, spanned::Spanned, Attribute, Field, Ident, Token,
+};
 
 use super::{kw, metadata::Metadata};
 
@@ -28,8 +30,10 @@ impl Response {
         let s3ers_api_macros = quote! { #s3ers_api::exports::s3ers_api_macros };
         let s3ers_serde = quote! { #s3ers_api::exports::s3ers_serde };
 
-        let docs =
-            format!("Data in the response from the `{}` API endpoint.", metadata.name.value());
+        let docs = format!(
+            "Data in the response from the `{}` API endpoint.",
+            metadata.name.value()
+        );
         let struct_attributes = &self.attributes;
 
         let response_ident = Ident::new("Response", self.response_kw.span());

@@ -8,7 +8,9 @@ use serde::{
     de::{Deserialize, Deserializer, IgnoredAny, MapAccess, Visitor},
     ser::{Serialize, Serializer},
 };
-use serde_json::value::{to_raw_value as to_raw_json_value, RawValue as RawJsonValue};
+use serde_json::value::{
+    to_raw_value as to_raw_json_value, RawValue as RawJsonValue,
+};
 
 use crate::cow::MyCowStr;
 
@@ -58,7 +60,10 @@ impl<T> Raw<T> {
 
     /// Create a `Raw` from a boxed `RawValue`.
     pub fn from_json(json: Box<RawJsonValue>) -> Self {
-        Self { json, _ev: PhantomData }
+        Self {
+            json,
+            _ev: PhantomData,
+        }
     }
 
     /// Access the underlying json value.
@@ -91,7 +96,10 @@ impl<T> Raw<T> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn get_field<'a, U>(&'a self, field_name: &str) -> serde_json::Result<Option<U>>
+    pub fn get_field<'a, U>(
+        &'a self,
+        field_name: &str,
+    ) -> serde_json::Result<Option<U>>
     where
         U: Deserialize<'a>,
     {
@@ -102,7 +110,10 @@ impl<T> Raw<T> {
 
         impl<'b, T> SingleFieldVisitor<'b, T> {
             fn new(field_name: &'b str) -> Self {
-                Self { field_name, _phantom: PhantomData }
+                Self {
+                    field_name,
+                    _phantom: PhantomData,
+                }
             }
         }
 
@@ -112,7 +123,10 @@ impl<T> Raw<T> {
         {
             type Value = Option<T>;
 
-            fn expecting(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+            fn expecting(
+                &self,
+                formatter: &mut Formatter<'_>,
+            ) -> std::fmt::Result {
                 formatter.write_str("a string")
             }
 
@@ -133,7 +147,8 @@ impl<T> Raw<T> {
             }
         }
 
-        let mut deserializer = serde_json::Deserializer::from_str(self.json().get());
+        let mut deserializer =
+            serde_json::Deserializer::from_str(self.json().get());
         deserializer.deserialize_map(SingleFieldVisitor::new(field_name))
     }
 
@@ -163,7 +178,9 @@ impl<T> Clone for Raw<T> {
 impl<T> Debug for Raw<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use std::any::type_name;
-        f.debug_struct(&format!("Raw::<{}>", type_name::<T>())).field("json", &self.json).finish()
+        f.debug_struct(&format!("Raw::<{}>", type_name::<T>()))
+            .field("json", &self.json)
+            .finish()
     }
 }
 

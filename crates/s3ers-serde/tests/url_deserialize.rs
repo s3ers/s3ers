@@ -38,12 +38,18 @@ fn deserialize_borrowed_str() {
 fn deserialize_reader() {
     let result = vec![("first".to_owned(), 23), ("last".to_owned(), 42)];
 
-    assert_eq!(urlencoded::from_reader(b"first=23&last=42" as &[_]), Ok(result));
+    assert_eq!(
+        urlencoded::from_reader(b"first=23&last=42" as &[_]),
+        Ok(result)
+    );
 }
 
 #[test]
 fn deserialize_option() {
-    let result = vec![("first".to_owned(), Some(23)), ("last".to_owned(), Some(42))];
+    let result = vec![
+        ("first".to_owned(), Some(23)),
+        ("last".to_owned(), Some(42)),
+    ];
     assert_eq!(urlencoded::from_str("first=23&last=42"), Ok(result));
 }
 
@@ -64,7 +70,8 @@ enum X {
 
 #[test]
 fn deserialize_unit_enum() {
-    let result: Vec<(String, X)> = urlencoded::from_str("one=A&two=B&three=C").unwrap();
+    let result: Vec<(String, X)> =
+        urlencoded::from_str("one=A&two=B&three=C").unwrap();
 
     assert_eq!(result.len(), 3);
     assert!(result.contains(&("one".to_owned(), X::A)));
@@ -86,7 +93,11 @@ struct Params<'a> {
 
 #[test]
 fn deserialize_struct() {
-    let de = Params { a: 10, b: "Hello", c: None };
+    let de = Params {
+        a: 10,
+        b: "Hello",
+        c: None,
+    };
     assert_eq!(urlencoded::from_str("a=10&b=Hello"), Ok(de));
     assert_eq!(urlencoded::from_str("b=Hello&a=10"), Ok(de));
     assert_eq!(urlencoded::from_str("a=10&b=Hello&d=1&d=2"), Ok(de));
@@ -100,7 +111,10 @@ fn deserialize_list_of_str() {
         Err(error) if error.to_string().contains("unsupported")
     );
 
-    assert_eq!(urlencoded::from_str("a=a&a=b"), Ok(vec![("a", vec!["a", "b"])]))
+    assert_eq!(
+        urlencoded::from_str("a=a&a=b"),
+        Ok(vec![("a", vec!["a", "b"])])
+    )
 }
 
 #[test]
@@ -113,12 +127,18 @@ fn deserialize_multiple_lists() {
 
     assert_eq!(
         urlencoded::from_str("xs=true&xs=false&ys=3&ys=2&ys=1"),
-        Ok(Lists { xs: vec![true, false], ys: vec![3, 2, 1] })
+        Ok(Lists {
+            xs: vec![true, false],
+            ys: vec![3, 2, 1]
+        })
     );
 
     assert_eq!(
         urlencoded::from_str("ys=3&xs=true&ys=2&xs=false&ys=1"),
-        Ok(Lists { xs: vec![true, false], ys: vec![3, 2, 1] })
+        Ok(Lists {
+            xs: vec![true, false],
+            ys: vec![3, 2, 1]
+        })
     );
 }
 
@@ -130,7 +150,10 @@ fn deserialize_with_serde_attributes() {
         xs: Vec<bool>,
         #[serde(default)]
         def: Option<u8>,
-        #[serde(default, deserialize_with = "s3ers_serde::empty_string_as_none")]
+        #[serde(
+            default,
+            deserialize_with = "s3ers_serde::empty_string_as_none"
+        )]
         str: Option<String>,
         #[serde(default)]
         flag: bool,
@@ -138,12 +161,22 @@ fn deserialize_with_serde_attributes() {
 
     assert_eq!(
         urlencoded::from_str("xs=true&xs=false&def=3&str=&flag=true"),
-        Ok(FieldsWithAttributes { xs: vec![true, false], def: Some(3), str: None, flag: true })
+        Ok(FieldsWithAttributes {
+            xs: vec![true, false],
+            def: Some(3),
+            str: None,
+            flag: true
+        })
     );
 
     assert_eq!(
         urlencoded::from_str(""),
-        Ok(FieldsWithAttributes { xs: vec![], def: None, str: None, flag: false })
+        Ok(FieldsWithAttributes {
+            xs: vec![],
+            def: None,
+            str: None,
+            flag: false
+        })
     );
 }
 
@@ -162,7 +195,10 @@ fn deserialize_list_of_option() {
 
 #[test]
 fn deserialize_list_of_newtype() {
-    assert_eq!(urlencoded::from_str("list=test"), Ok(vec![("list", vec![NewType("test")])]));
+    assert_eq!(
+        urlencoded::from_str("list=test"),
+        Ok(vec![("list", vec![NewType("test")])])
+    );
 }
 
 #[test]
@@ -202,13 +238,17 @@ struct ListStruct {
 
 #[test]
 fn deserialize_newstruct() {
-    let de = NewStruct { list: vec!["hello", "world"] };
+    let de = NewStruct {
+        list: vec!["hello", "world"],
+    };
     assert_eq!(urlencoded::from_str("list=hello&list=world"), Ok(de));
 }
 
 #[test]
 fn deserialize_numlist() {
-    let de = NumList { list: vec![1, 2, 3, 4] };
+    let de = NumList {
+        list: vec![1, 2, 3, 4],
+    };
     assert_eq!(urlencoded::from_str("list=1&list=2&list=3&list=4"), Ok(de));
 }
 
@@ -234,10 +274,18 @@ struct InnerList<T> {
 fn deserialize_nested_struct() {
     let mut encoder = Encoder::new(String::new());
 
-    let nested = Nested { item: Inner { c: "hello", a: 10, b: "bye" } };
+    let nested = Nested {
+        item: Inner {
+            c: "hello",
+            a: 10,
+            b: "bye",
+        },
+    };
     assert_eq!(
         urlencoded::from_str(
-            &encoder.append_pair("item", r#"{"c":"hello","a":10,"b":"bye"}"#).finish(),
+            &encoder
+                .append_pair("item", r#"{"c":"hello","a":10,"b":"bye"}"#)
+                .finish(),
         ),
         Ok(nested)
     );
@@ -248,10 +296,16 @@ fn deserialize_nested_struct() {
 fn deserialize_nested_struct_with_list() {
     let mut encoder = Encoder::new(String::new());
 
-    let nested = Nested { item: InnerList { list: vec![1, 2, 3] } };
+    let nested = Nested {
+        item: InnerList {
+            list: vec![1, 2, 3],
+        },
+    };
 
     assert_eq!(
-        urlencoded::from_str(&encoder.append_pair("item", r#"{"list":[1,2,3]}"#).finish()),
+        urlencoded::from_str(
+            &encoder.append_pair("item", r#"{"list":[1,2,3]}"#).finish()
+        ),
         Ok(nested)
     );
 }
@@ -261,9 +315,17 @@ fn deserialize_nested_struct_with_list() {
 fn deserialize_nested_list_option() {
     let mut encoder = Encoder::new(String::new());
 
-    let nested = Nested { item: InnerList { list: vec![Some(1), Some(2), None] } };
+    let nested = Nested {
+        item: InnerList {
+            list: vec![Some(1), Some(2), None],
+        },
+    };
     assert_eq!(
-        urlencoded::from_str(&encoder.append_pair("item", r#"{"list":[1,2,null]}"#).finish()),
+        urlencoded::from_str(
+            &encoder
+                .append_pair("item", r#"{"list":[1,2,null]}"#)
+                .finish()
+        ),
         Ok(nested)
     );
 }

@@ -5,8 +5,8 @@ use std::collections::btree_map::{BTreeMap, Entry};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{
-    parse_quote, punctuated::Punctuated, spanned::Spanned, visit::Visit, Attribute, Field, Ident,
-    Lifetime, Token,
+    parse_quote, punctuated::Punctuated, spanned::Spanned, visit::Visit,
+    Attribute, Field, Ident, Lifetime, Token,
 };
 
 use super::{kw, metadata::Metadata};
@@ -45,20 +45,31 @@ impl Request {
 
                         // If at least one field uses this lifetime and has no cfg attribute, we
                         // don't need a cfg attribute for the lifetime either.
-                        *lifetime_cfg = Option::zip(lifetime_cfg.as_ref(), self.field_cfg.as_ref())
-                            .map(|(a, b)| {
-                                let expr_a = extract_cfg(a);
-                                let expr_b = extract_cfg(b);
-                                parse_quote! { #[cfg( any( #expr_a, #expr_b ) )] }
-                            });
+                        *lifetime_cfg = Option::zip(
+                            lifetime_cfg.as_ref(),
+                            self.field_cfg.as_ref(),
+                        )
+                        .map(|(a, b)| {
+                            let expr_a = extract_cfg(a);
+                            let expr_b = extract_cfg(b);
+                            parse_quote! { #[cfg( any( #expr_a, #expr_b ) )] }
+                        });
                     }
                 }
             }
         }
 
         for field in &self.fields {
-            let field_cfg = if field.attrs.is_empty() { None } else { all_cfgs(&field.attrs) };
-            Visitor { lifetimes: &mut lifetimes, field_cfg }.visit_type(&field.ty);
+            let field_cfg = if field.attrs.is_empty() {
+                None
+            } else {
+                all_cfgs(&field.attrs)
+            };
+            Visitor {
+                lifetimes: &mut lifetimes,
+                field_cfg,
+            }
+            .visit_type(&field.ty);
         }
 
         lifetimes

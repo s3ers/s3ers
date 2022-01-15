@@ -21,12 +21,16 @@ impl Request {
 
             while let Some(start_of_segment) = format_string.find(':') {
                 // ':' should only ever appear at the start of a segment
-                assert_eq!(&format_string[start_of_segment - 1..start_of_segment], "/");
+                assert_eq!(
+                    &format_string[start_of_segment - 1..start_of_segment],
+                    "/"
+                );
 
-                let end_of_segment = match format_string[start_of_segment..].find('/') {
-                    Some(rel_pos) => start_of_segment + rel_pos,
-                    None => format_string.len(),
-                };
+                let end_of_segment =
+                    match format_string[start_of_segment..].find('/') {
+                        Some(rel_pos) => start_of_segment + rel_pos,
+                        None => format_string.len(),
+                    };
 
                 let path_var = Ident::new(
                     &format_string[start_of_segment + 1..end_of_segment],
@@ -38,7 +42,8 @@ impl Request {
                         #percent_encoding::NON_ALPHANUMERIC,
                     )
                 });
-                format_string.replace_range(start_of_segment..end_of_segment, "{}");
+                format_string
+                    .replace_range(start_of_segment..end_of_segment, "{}");
             }
 
             quote! {
@@ -49,7 +54,10 @@ impl Request {
         };
 
         let request_query_string = if let Some(field) = self.query_map_field() {
-            let field_name = field.ident.as_ref().expect("expected field to have identifier");
+            let field_name = field
+                .ident
+                .as_ref()
+                .expect("expected field to have identifier");
 
             quote! {{
                 // This function exists so that the compiler will throw an error when the type of
@@ -101,7 +109,9 @@ impl Request {
         // `application/json` content-type would be wrong. It may also cause problems with CORS
         // policies that don't allow the `Content-Type` header (for things such as `.well-known`
         // that are commonly handled by something else than a homeserver).
-        let mut header_kvs = if self.raw_body_field().is_some() || self.has_body_fields() {
+        let mut header_kvs = if self.raw_body_field().is_some()
+            || self.has_body_fields()
+        {
             quote! {
                 req_headers.insert(
                     #http::header::CONTENT_TYPE,
@@ -143,10 +153,14 @@ impl Request {
         }));
 
         let request_body = if let Some(field) = self.raw_body_field() {
-            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
+            let field_name = field
+                .ident
+                .as_ref()
+                .expect("expected field to have an identifier");
             quote! { #s3ers_serde::slice_to_buf(&self.#field_name) }
         } else if self.has_body_fields() {
-            let initializers = struct_init_fields(self.body_fields(), quote! { self });
+            let initializers =
+                struct_init_fields(self.body_fields(), quote! { self });
 
             quote! {
                 #s3ers_serde::json_to_buf(&RequestBody { #initializers })?
@@ -157,16 +171,18 @@ impl Request {
             quote! { #s3ers_serde::slice_to_buf(b"{}") }
         };
 
-        let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
+        let (impl_generics, ty_generics, where_clause) =
+            self.generics.split_for_impl();
 
-        let non_auth_impl = matches!(self.authentication, AuthScheme::None(_)).then(|| {
-            quote! {
-                #[automatically_derived]
-                #[cfg(feature = "client")]
-                impl #impl_generics #s3ers_api::OutgoingNonAuthRequest
-                    for Request #ty_generics #where_clause {}
-            }
-        });
+        let non_auth_impl = matches!(self.authentication, AuthScheme::None(_))
+            .then(|| {
+                quote! {
+                    #[automatically_derived]
+                    #[cfg(feature = "client")]
+                    impl #impl_generics #s3ers_api::OutgoingNonAuthRequest
+                        for Request #ty_generics #where_clause {}
+                }
+            });
 
         quote! {
             #[automatically_derived]
@@ -216,9 +232,15 @@ fn struct_init_fields<'a>(
     fields
         .into_iter()
         .map(|field| {
-            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
-            let cfg_attrs =
-                field.attrs.iter().filter(|a| a.path.is_ident("cfg")).collect::<Vec<_>>();
+            let field_name = field
+                .ident
+                .as_ref()
+                .expect("expected field to have an identifier");
+            let cfg_attrs = field
+                .attrs
+                .iter()
+                .filter(|a| a.path.is_ident("cfg"))
+                .collect::<Vec<_>>();
 
             quote! {
                 #( #cfg_attrs )*

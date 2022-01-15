@@ -5,7 +5,9 @@ use std::collections::BTreeSet;
 use proc_macro2::TokenStream;
 use proc_macro_crate::{crate_name, FoundCrate};
 use quote::{format_ident, quote};
-use syn::{parse_quote, visit::Visit, AttrStyle, Attribute, Lifetime, NestedMeta, Type};
+use syn::{
+    parse_quote, visit::Visit, AttrStyle, Attribute, Lifetime, NestedMeta, Type,
+};
 
 pub fn import_s3ers_api() -> TokenStream {
     if let Ok(FoundCrate::Name(name)) = crate_name("s3ers-api") {
@@ -53,7 +55,9 @@ pub fn extract_cfg(attr: &Attribute) -> Option<NestedMeta> {
         return None;
     }
 
-    let meta = attr.parse_meta().expect("cfg attribute can be parsed to syn::Meta");
+    let meta = attr
+        .parse_meta()
+        .expect("cfg attribute can be parsed to syn::Meta");
     let mut list = match meta {
         syn::Meta::List(l) => l,
         _ => panic!("unexpected cfg syntax"),

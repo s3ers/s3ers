@@ -74,19 +74,25 @@ struct IncomingMyType {
 #[proc_macro_derive(Outgoing, attributes(incoming_derive))]
 pub fn derive_outgoing(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_derive_outgoing(input).unwrap_or_else(syn::Error::into_compile_error).into()
+    expand_derive_outgoing(input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 #[proc_macro_derive(AsRefStr, attributes(s3ers_enum))]
 pub fn derive_enum_as_ref_str(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemEnum);
-    expand_enum_as_ref_str(&input).unwrap_or_else(syn::Error::into_compile_error).into()
+    expand_enum_as_ref_str(&input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 #[proc_macro_derive(FromString, attributes(s3ers_enum))]
 pub fn derive_enum_from_string(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ItemEnum);
-    expand_enum_from_string(&input).unwrap_or_else(syn::Error::into_compile_error).into()
+    expand_enum_from_string(&input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 // FIXME: The following macros aren't actually interested in type details beyond name (and possibly
@@ -95,13 +101,17 @@ pub fn derive_enum_from_string(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DisplayAsRefStr)]
 pub fn derive_display_as_ref_str(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_display_as_ref_str(&input.ident).unwrap_or_else(syn::Error::into_compile_error).into()
+    expand_display_as_ref_str(&input.ident)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 #[proc_macro_derive(SerializeAsRefStr)]
 pub fn derive_serialize_as_ref_str(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_serialize_as_ref_str(&input.ident).unwrap_or_else(syn::Error::into_compile_error).into()
+    expand_serialize_as_ref_str(&input.ident)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 #[proc_macro_derive(DeserializeFromCowStr)]
@@ -123,13 +133,17 @@ pub fn derive_partial_ord_as_ref_str(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(OrdAsRefStr)]
 pub fn derive_ord_as_ref_str(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_ord_as_ref_str(&input.ident).unwrap_or_else(syn::Error::into_compile_error).into()
+    expand_ord_as_ref_str(&input.ident)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 #[proc_macro_derive(PartialEqAsRefStr)]
 pub fn derive_partial_eq_as_ref_str(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_partial_eq_as_ref_str(&input.ident).unwrap_or_else(syn::Error::into_compile_error).into()
+    expand_partial_eq_as_ref_str(&input.ident)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 /// Shorthand for the derives `AsRefStr`, `FromString`, `DisplayAsRefStr`, `SerializeAsRefStr` and
@@ -153,7 +167,9 @@ pub fn derive_string_enum(input: TokenStream) -> TokenStream {
     }
 
     let input = parse_macro_input!(input as ItemEnum);
-    expand_all(input).unwrap_or_else(syn::Error::into_compile_error).into()
+    expand_all(input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 /// A derive macro that generates no code, but registers the serde attribute so both `#[serde(...)]`

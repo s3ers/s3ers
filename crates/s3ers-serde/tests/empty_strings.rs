@@ -1,6 +1,8 @@
 mod string {
     use serde::{Deserialize, Serialize};
-    use serde_json::{from_value as from_json_value, json, to_value as to_json_value};
+    use serde_json::{
+        from_value as from_json_value, json, to_value as to_json_value,
+    };
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct StringStruct {
@@ -21,7 +23,9 @@ mod string {
 
     #[test]
     fn some_se() {
-        let decoded = StringStruct { x: Some("foo".into()) };
+        let decoded = StringStruct {
+            x: Some("foo".into()),
+        };
         let encoded = json!({ "x": "foo" });
         assert_eq!(to_json_value(decoded).unwrap(), encoded);
     }
@@ -43,7 +47,9 @@ mod string {
     #[test]
     fn some_de() {
         let encoded = json!({ "x": "foo" });
-        let decoded = StringStruct { x: Some("foo".into()) };
+        let decoded = StringStruct {
+            x: Some("foo".into()),
+        };
         assert_eq!(from_json_value::<StringStruct>(encoded).unwrap(), decoded);
     }
 }

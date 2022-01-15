@@ -15,11 +15,20 @@ pub fn expand_enum_from_string(input: &ItemEnum) -> syn::Result<TokenStream> {
             let variant_name = &v.ident;
             let variant_str = match (get_rename(v)?, &v.fields) {
                 (None, Fields::Unit) => Some(
-                    rename_rule.apply_to_variant(&variant_name.to_string()).into_token_stream(),
+                    rename_rule
+                        .apply_to_variant(&variant_name.to_string())
+                        .into_token_stream(),
                 ),
-                (Some(rename), Fields::Unit) => Some(rename.into_token_stream()),
+                (Some(rename), Fields::Unit) => {
+                    Some(rename.into_token_stream())
+                }
                 (None, Fields::Named(FieldsNamed { named: fields, .. }))
-                | (None, Fields::Unnamed(FieldsUnnamed { unnamed: fields, .. })) => {
+                | (
+                    None,
+                    Fields::Unnamed(FieldsUnnamed {
+                        unnamed: fields, ..
+                    }),
+                ) => {
                     if fields.len() != 1 {
                         return Err(syn::Error::new_spanned(
                             v,
@@ -56,7 +65,8 @@ pub fn expand_enum_from_string(input: &ItemEnum) -> syn::Result<TokenStream> {
                 }
             };
 
-            Ok(variant_str.map(|s| quote! { #s => #enum_name :: #variant_name }))
+            Ok(variant_str
+                .map(|s| quote! { #s => #enum_name :: #variant_name }))
         })
         .collect::<syn::Result<_>>()?;
 
@@ -64,7 +74,10 @@ pub fn expand_enum_from_string(input: &ItemEnum) -> syn::Result<TokenStream> {
     let branches = branches.iter().flatten();
 
     if fallback.is_none() {
-        return Err(syn::Error::new(Span::call_site(), "required fallback variant not found"));
+        return Err(syn::Error::new(
+            Span::call_site(),
+            "required fallback variant not found",
+        ));
     }
 
     Ok(quote! {

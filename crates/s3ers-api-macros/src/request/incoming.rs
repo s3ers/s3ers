@@ -27,7 +27,10 @@ impl Request {
         let (parse_request_path, path_vars) = if self.has_path_fields() {
             let path_string = self.path.value();
 
-            assert!(path_string.starts_with('/'), "path needs to start with '/'");
+            assert!(
+                path_string.starts_with('/'),
+                "path needs to start with '/'"
+            );
             assert!(
                 path_string.chars().filter(|c| *c == ':').count() == self.path_field_count(),
                 "number of declared path parameters needs to match amount of placeholders in path"
@@ -67,10 +70,18 @@ impl Request {
             (TokenStream::new(), TokenStream::new())
         };
 
-        let (parse_query, query_vars) = if let Some(field) = self.query_map_field() {
-            let cfg_attrs =
-                field.attrs.iter().filter(|a| a.path.is_ident("cfg")).collect::<Vec<_>>();
-            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
+        let (parse_query, query_vars) = if let Some(field) =
+            self.query_map_field()
+        {
+            let cfg_attrs = field
+                .attrs
+                .iter()
+                .filter(|a| a.path.is_ident("cfg"))
+                .collect::<Vec<_>>();
+            let field_name = field
+                .ident
+                .as_ref()
+                .expect("expected field to have an identifier");
             let parse = quote! {
                 #( #cfg_attrs )*
                 let #field_name = #s3ers_serde::urlencoded::from_str(
@@ -197,8 +208,12 @@ impl Request {
             }
         });
 
-        let (parse_body, body_vars) = if let Some(field) = self.raw_body_field() {
-            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
+        let (parse_body, body_vars) = if let Some(field) = self.raw_body_field()
+        {
+            let field_name = field
+                .ident
+                .as_ref()
+                .expect("expected field to have an identifier");
             let parse = quote! {
                 let #field_name =
                     ::std::convert::AsRef::<[u8]>::as_ref(request.body()).to_vec();
@@ -264,9 +279,15 @@ fn vars<'a>(
     fields
         .into_iter()
         .map(|field| {
-            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
-            let cfg_attrs =
-                field.attrs.iter().filter(|a| a.path.is_ident("cfg")).collect::<Vec<_>>();
+            let field_name = field
+                .ident
+                .as_ref()
+                .expect("expected field to have an identifier");
+            let cfg_attrs = field
+                .attrs
+                .iter()
+                .filter(|a| a.path.is_ident("cfg"))
+                .collect::<Vec<_>>();
 
             let decl = quote! {
                 #( #cfg_attrs )*

@@ -12,14 +12,24 @@ pub fn expand_enum_as_ref_str(input: &ItemEnum) -> syn::Result<TokenStream> {
         .iter()
         .map(|v| {
             let variant_name = &v.ident;
-            let (field_capture, variant_str) = match (get_rename(v)?, &v.fields) {
+            let (field_capture, variant_str) = match (get_rename(v)?, &v.fields)
+            {
                 (None, Fields::Unit) => (
                     None,
-                    rename_rule.apply_to_variant(&variant_name.to_string()).into_token_stream(),
+                    rename_rule
+                        .apply_to_variant(&variant_name.to_string())
+                        .into_token_stream(),
                 ),
-                (Some(rename), Fields::Unit) => (None, rename.into_token_stream()),
+                (Some(rename), Fields::Unit) => {
+                    (None, rename.into_token_stream())
+                }
                 (None, Fields::Named(FieldsNamed { named: fields, .. }))
-                | (None, Fields::Unnamed(FieldsUnnamed { unnamed: fields, .. })) => {
+                | (
+                    None,
+                    Fields::Unnamed(FieldsUnnamed {
+                        unnamed: fields, ..
+                    }),
+                ) => {
                     if fields.len() != 1 {
                         return Err(syn::Error::new_spanned(
                             v,

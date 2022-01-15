@@ -28,7 +28,9 @@ s3ers_api! {
 
 #[test]
 fn response_content_type_override() {
-    let res = Response { stuff: "magic".into() };
+    let res = Response {
+        stuff: "magic".into(),
+    };
     let mut http_res = res.try_into_http_response::<Vec<u8>>().unwrap();
 
     // Test that we correctly replaced the default content type,
@@ -45,7 +47,10 @@ fn response_content_type_override() {
 
 #[test]
 fn request_content_type_override() {
-    let req = Request { location: None, stuff: "magic".into() };
+    let req = Request {
+        location: None,
+        stuff: "magic".into(),
+    };
     let mut http_req = req
         .try_into_http_request::<Vec<u8>>("https://homeserver.tld")
         .unwrap();

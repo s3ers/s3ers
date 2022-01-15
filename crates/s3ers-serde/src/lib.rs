@@ -33,8 +33,8 @@ pub use self::{
     empty::vec_as_map_of_empty,
     raw::Raw,
     strings::{
-        btreemap_int_or_string_to_int_values, empty_string_as_none, int_or_string_to_int,
-        none_as_empty_string,
+        btreemap_int_or_string_to_int_values, empty_string_as_none,
+        int_or_string_to_int, none_as_empty_string,
     },
 };
 

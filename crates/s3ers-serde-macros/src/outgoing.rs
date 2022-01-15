@@ -4,9 +4,10 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_quote,
     punctuated::Punctuated,
-    AngleBracketedGenericArguments, Attribute, Data, DeriveInput, Field, Fields, GenericArgument,
-    GenericParam, Generics, Ident, ImplGenerics, ParenthesizedGenericArguments, Path,
-    PathArguments, Token, Type, TypeGenerics, TypePath, TypeReference, TypeSlice, Variant,
+    AngleBracketedGenericArguments, Attribute, Data, DeriveInput, Field,
+    Fields, GenericArgument, GenericParam, Generics, Ident, ImplGenerics,
+    ParenthesizedGenericArguments, Path, PathArguments, Token, Type,
+    TypeGenerics, TypePath, TypeReference, TypeSlice, Variant,
 };
 
 use crate::util::import_s3ers_serde;
@@ -52,25 +53,34 @@ pub fn expand_derive_outgoing(input: DeriveInput) -> syn::Result<TokenStream> {
         quote! { #s3ers_serde::_FakeDeriveSerde }
     });
 
-    let input_attrs =
-        input.attrs.iter().filter(|attr| filter_input_attrs(attr)).collect::<Vec<_>>();
+    let input_attrs = input
+        .attrs
+        .iter()
+        .filter(|attr| filter_input_attrs(attr))
+        .collect::<Vec<_>>();
 
     let data = match input.data.clone() {
-        Data::Union(_) => panic!("#[derive(Outgoing)] does not support Union types"),
+        Data::Union(_) => {
+            panic!("#[derive(Outgoing)] does not support Union types")
+        }
         Data::Enum(e) => DataKind::Enum(e.variants.into_iter().collect()),
         Data::Struct(s) => match s.fields {
-            Fields::Named(fs) => {
-                DataKind::Struct(fs.named.into_iter().collect(), StructKind::Struct)
-            }
-            Fields::Unnamed(fs) => {
-                DataKind::Struct(fs.unnamed.into_iter().collect(), StructKind::Tuple)
-            }
+            Fields::Named(fs) => DataKind::Struct(
+                fs.named.into_iter().collect(),
+                StructKind::Struct,
+            ),
+            Fields::Unnamed(fs) => DataKind::Struct(
+                fs.unnamed.into_iter().collect(),
+                StructKind::Tuple,
+            ),
             Fields::Unit => DataKind::Unit,
         },
     };
 
     match data {
-        DataKind::Unit => Ok(impl_outgoing_with_incoming_self(&input, &s3ers_serde)),
+        DataKind::Unit => {
+            Ok(impl_outgoing_with_incoming_self(&input, &s3ers_serde))
+        }
         DataKind::Enum(mut vars) => {
             let mut found_lifetime = false;
             for var in &mut vars {
@@ -82,18 +92,29 @@ pub fn expand_derive_outgoing(input: DeriveInput) -> syn::Result<TokenStream> {
             }
 
             let original_ident = &input.ident;
-            let (original_impl_gen, original_ty_gen, _) = input.generics.split_for_impl();
+            let (original_impl_gen, original_ty_gen, _) =
+                input.generics.split_for_impl();
 
             if !found_lifetime {
-                return Ok(impl_outgoing_with_incoming_self(&input, &s3ers_serde));
+                return Ok(impl_outgoing_with_incoming_self(
+                    &input,
+                    &s3ers_serde,
+                ));
             }
 
             let vis = input.vis;
-            let doc = format!("'Incoming' variant of [{ty}](enum.{ty}.html).", ty = &input.ident);
-            let incoming_ident =
-                format_ident!("Incoming{}", original_ident, span = Span::call_site());
+            let doc = format!(
+                "'Incoming' variant of [{ty}](enum.{ty}.html).",
+                ty = &input.ident
+            );
+            let incoming_ident = format_ident!(
+                "Incoming{}",
+                original_ident,
+                span = Span::call_site()
+            );
             let mut gen_copy = input.generics.clone();
-            let (impl_gen, ty_gen) = split_for_impl_lifetime_less(&mut gen_copy);
+            let (impl_gen, ty_gen) =
+                split_for_impl_lifetime_less(&mut gen_copy);
 
             Ok(quote! {
                 #[doc = #doc]
@@ -111,7 +132,10 @@ pub fn expand_derive_outgoing(input: DeriveInput) -> syn::Result<TokenStream> {
             let mut found_lifetime = false;
             for field in &mut fields {
                 if !matches!(field.vis, syn::Visibility::Public(_)) {
-                    return Err(syn::Error::new_spanned(field, "All fields must be marked `pub`"));
+                    return Err(syn::Error::new_spanned(
+                        field,
+                        "All fields must be marked `pub`",
+                    ));
                 }
                 if strip_lifetimes(&mut field.ty) {
                     found_lifetime = true;
@@ -119,18 +143,29 @@ pub fn expand_derive_outgoing(input: DeriveInput) -> syn::Result<TokenStream> {
             }
 
             let original_ident = &input.ident;
-            let (original_impl_gen, original_ty_gen, _) = input.generics.split_for_impl();
+            let (original_impl_gen, original_ty_gen, _) =
+                input.generics.split_for_impl();
 
             if !found_lifetime {
-                return Ok(impl_outgoing_with_incoming_self(&input, &s3ers_serde));
+                return Ok(impl_outgoing_with_incoming_self(
+                    &input,
+                    &s3ers_serde,
+                ));
             }
 
             let vis = input.vis;
-            let doc = format!("'Incoming' variant of [{ty}](struct.{ty}.html).", ty = &input.ident);
-            let incoming_ident =
-                format_ident!("Incoming{}", original_ident, span = Span::call_site());
+            let doc = format!(
+                "'Incoming' variant of [{ty}](struct.{ty}.html).",
+                ty = &input.ident
+            );
+            let incoming_ident = format_ident!(
+                "Incoming{}",
+                original_ident,
+                span = Span::call_site()
+            );
             let mut gen_copy = input.generics.clone();
-            let (impl_gen, ty_gen) = split_for_impl_lifetime_less(&mut gen_copy);
+            let (impl_gen, ty_gen) =
+                split_for_impl_lifetime_less(&mut gen_copy);
 
             let struct_def = match struct_kind {
                 StructKind::Struct => quote! { { #(#fields,)* } },
@@ -162,7 +197,10 @@ fn filter_input_attrs(attr: &Attribute) -> bool {
         || attr.path.is_ident("allow")
 }
 
-fn impl_outgoing_with_incoming_self(input: &DeriveInput, s3ers_serde: &TokenStream) -> TokenStream {
+fn impl_outgoing_with_incoming_self(
+    input: &DeriveInput,
+    s3ers_serde: &TokenStream,
+) -> TokenStream {
     let ident = &input.ident;
     let (impl_gen, ty_gen, _) = input.generics.split_for_impl();
 
@@ -174,7 +212,9 @@ fn impl_outgoing_with_incoming_self(input: &DeriveInput, s3ers_serde: &TokenStre
     }
 }
 
-fn split_for_impl_lifetime_less(generics: &mut Generics) -> (ImplGenerics<'_>, TypeGenerics<'_>) {
+fn split_for_impl_lifetime_less(
+    generics: &mut Generics,
+) -> (ImplGenerics<'_>, TypeGenerics<'_>) {
     generics.params = generics
         .params
         .clone()
@@ -197,9 +237,9 @@ fn strip_lifetimes(field_type: &mut Type) -> bool {
             for seg in &mut path.segments {
                 // strip generic lifetimes
                 match &mut seg.arguments {
-                    PathArguments::AngleBracketed(AngleBracketedGenericArguments {
-                        args, ..
-                    }) => {
+                    PathArguments::AngleBracketed(
+                        AngleBracketedGenericArguments { args, .. },
+                    ) => {
                         *args = args
                             .clone()
                             .into_iter()
@@ -221,9 +261,9 @@ fn strip_lifetimes(field_type: &mut Type) -> bool {
                             })
                             .collect();
                     }
-                    PathArguments::Parenthesized(ParenthesizedGenericArguments {
-                        inputs, ..
-                    }) => {
+                    PathArguments::Parenthesized(
+                        ParenthesizedGenericArguments { inputs, .. },
+                    ) => {
                         *inputs = inputs
                             .clone()
                             .into_iter()
@@ -243,7 +283,8 @@ fn strip_lifetimes(field_type: &mut Type) -> bool {
             // that type.
             if is_lifetime_generic {
                 if let Some(name) = path.segments.last_mut() {
-                    let incoming_ty_ident = format_ident!("Incoming{}", name.ident);
+                    let incoming_ty_ident =
+                        format_ident!("Incoming{}", name.ident);
                     name.ident = incoming_ty_ident;
                 }
             }
@@ -324,7 +365,9 @@ pub struct Meta {
 impl Parse for Meta {
     fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
         Ok(Self {
-            derive_macs: Punctuated::<_, Token![,]>::parse_terminated(input)?.into_iter().collect(),
+            derive_macs: Punctuated::<_, Token![,]>::parse_terminated(input)?
+                .into_iter()
+                .collect(),
         })
     }
 }

@@ -9,45 +9,61 @@ impl Response {
         let http = quote! { #s3ers_api::exports::http };
         let s3ers_serde = quote! { #s3ers_api::exports::s3ers_serde };
 
-        let serialize_response_headers = self.fields.iter().filter_map(|response_field| {
-            response_field.as_header_field().map(|(field, header_name)| {
-                let field_name =
-                    field.ident.as_ref().expect("expected field to have an identifier");
+        let serialize_response_headers =
+            self.fields.iter().filter_map(|response_field| {
+                response_field
+                    .as_header_field()
+                    .map(|(field, header_name)| {
+                        let field_name = field
+                            .ident
+                            .as_ref()
+                            .expect("expected field to have an identifier");
 
-                match &field.ty {
-                    syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, .. })
-                        if segments.last().unwrap().ident == "Option" =>
-                    {
-                        quote! {
-                            if let Some(header) = self.#field_name {
+                        match &field.ty {
+                            syn::Type::Path(syn::TypePath {
+                                path: syn::Path { segments, .. },
+                                ..
+                            }) if segments.last().unwrap().ident
+                                == "Option" =>
+                            {
+                                quote! {
+                                    if let Some(header) = self.#field_name {
+                                        headers.insert(
+                                            #http::header::#header_name,
+                                            header.parse()?,
+                                        );
+                                    }
+                                }
+                            }
+                            _ => quote! {
                                 headers.insert(
                                     #http::header::#header_name,
-                                    header.parse()?,
+                                    self.#field_name.parse()?,
                                 );
-                            }
+                            },
                         }
-                    }
-                    _ => quote! {
-                        headers.insert(
-                            #http::header::#header_name,
-                            self.#field_name.parse()?,
-                        );
-                    },
-                }
-            })
-        });
+                    })
+            });
 
-        let body = if let Some(field) =
-            self.fields.iter().find_map(ResponseField::as_raw_body_field)
+        let body = if let Some(field) = self
+            .fields
+            .iter()
+            .find_map(ResponseField::as_raw_body_field)
         {
-            let field_name = field.ident.as_ref().expect("expected field to have an identifier");
+            let field_name = field
+                .ident
+                .as_ref()
+                .expect("expected field to have an identifier");
             quote! { #s3ers_serde::slice_to_buf(&self.#field_name) }
         } else {
             let fields = self.fields.iter().filter_map(|response_field| {
                 response_field.as_body_field().map(|field| {
-                    let field_name =
-                        field.ident.as_ref().expect("expected field to have an identifier");
-                    let cfg_attrs = field.attrs.iter().filter(|a| a.path.is_ident("cfg"));
+                    let field_name = field
+                        .ident
+                        .as_ref()
+                        .expect("expected field to have an identifier");
+                    let cfg_attrs =
+                        field.attrs.iter().filter(|a| a.path.is_ident("cfg"));
 
                     quote! {
                         #( #cfg_attrs )*

@@ -5,7 +5,11 @@ use syn::Type;
 use super::{Response, ResponseField};
 
 impl Response {
-    pub fn expand_incoming(&self, error_ty: &Type, s3ers_api: &TokenStream) -> TokenStream {
+    pub fn expand_incoming(
+        &self,
+        error_ty: &Type,
+        s3ers_api: &TokenStream,
+    ) -> TokenStream {
         let http = quote! { #s3ers_api::exports::http };
         let s3ers_serde = quote! { #s3ers_api::exports::s3ers_serde };
         let serde_json = quote! { #s3ers_api::exports::serde_json };
@@ -43,10 +47,15 @@ impl Response {
 
             for response_field in &self.fields {
                 let field = response_field.field();
-                let field_name =
-                    field.ident.as_ref().expect("expected field to have an identifier");
-                let cfg_attrs =
-                    field.attrs.iter().filter(|a| a.path.is_ident("cfg")).collect::<Vec<_>>();
+                let field_name = field
+                    .ident
+                    .as_ref()
+                    .expect("expected field to have an identifier");
+                let cfg_attrs = field
+                    .attrs
+                    .iter()
+                    .filter(|a| a.path.is_ident("cfg"))
+                    .collect::<Vec<_>>();
 
                 fields.push(match response_field {
                     ResponseField::Body(_) | ResponseField::NewtypeBody(_) => {

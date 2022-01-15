@@ -36,13 +36,27 @@ pub fn expand_derive_request(input: DeriveInput) -> syn::Result<TokenStream> {
             let ty = &f.field().ty;
 
             match &f {
-                RequestField::Header(..) => collect_lifetime_idents(&mut lifetimes.header, ty),
-                RequestField::Body(_) => collect_lifetime_idents(&mut lifetimes.body, ty),
-                RequestField::NewtypeBody(_) => collect_lifetime_idents(&mut lifetimes.body, ty),
-                RequestField::RawBody(_) => collect_lifetime_idents(&mut lifetimes.body, ty),
-                RequestField::Path(_) => collect_lifetime_idents(&mut lifetimes.path, ty),
-                RequestField::Query(_) => collect_lifetime_idents(&mut lifetimes.query, ty),
-                RequestField::QueryMap(_) => collect_lifetime_idents(&mut lifetimes.query, ty),
+                RequestField::Header(..) => {
+                    collect_lifetime_idents(&mut lifetimes.header, ty)
+                }
+                RequestField::Body(_) => {
+                    collect_lifetime_idents(&mut lifetimes.body, ty)
+                }
+                RequestField::NewtypeBody(_) => {
+                    collect_lifetime_idents(&mut lifetimes.body, ty)
+                }
+                RequestField::RawBody(_) => {
+                    collect_lifetime_idents(&mut lifetimes.body, ty)
+                }
+                RequestField::Path(_) => {
+                    collect_lifetime_idents(&mut lifetimes.path, ty)
+                }
+                RequestField::Query(_) => {
+                    collect_lifetime_idents(&mut lifetimes.query, ty)
+                }
+                RequestField::QueryMap(_) => {
+                    collect_lifetime_idents(&mut lifetimes.query, ty)
+                }
             }
 
             Ok(f)
@@ -59,7 +73,8 @@ pub fn expand_derive_request(input: DeriveInput) -> syn::Result<TokenStream> {
             continue;
         }
 
-        let meta = attr.parse_args_with(Punctuated::<_, Token![,]>::parse_terminated)?;
+        let meta =
+            attr.parse_args_with(Punctuated::<_, Token![,]>::parse_terminated)?;
         for MetaNameValue { name, value } in meta {
             match value {
                 MetaValue::Type(t) if name == "authentication" => {
@@ -84,7 +99,8 @@ pub fn expand_derive_request(input: DeriveInput) -> syn::Result<TokenStream> {
         generics: input.generics,
         fields,
         lifetimes,
-        authentication: authentication.expect("missing authentication attribute"),
+        authentication: authentication
+            .expect("missing authentication attribute"),
         method: method.expect("missing method attribute"),
         path: path.expect("missing path attribute"),
         error_ty: error_ty.expect("missing error_ty attribute"),
@@ -120,25 +136,33 @@ impl Request {
     }
 
     fn has_body_fields(&self) -> bool {
-        self.fields
-            .iter()
-            .any(|f| matches!(f, RequestField::Body(_) | RequestField::NewtypeBody(_)))
+        self.fields.iter().any(|f| {
+            matches!(f, RequestField::Body(_) | RequestField::NewtypeBody(_))
+        })
     }
 
     fn has_newtype_body(&self) -> bool {
-        self.fields.iter().any(|f| matches!(f, RequestField::NewtypeBody(_)))
+        self.fields
+            .iter()
+            .any(|f| matches!(f, RequestField::NewtypeBody(_)))
     }
 
     fn has_header_fields(&self) -> bool {
-        self.fields.iter().any(|f| matches!(f, RequestField::Header(..)))
+        self.fields
+            .iter()
+            .any(|f| matches!(f, RequestField::Header(..)))
     }
 
     fn has_path_fields(&self) -> bool {
-        self.fields.iter().any(|f| matches!(f, RequestField::Path(_)))
+        self.fields
+            .iter()
+            .any(|f| matches!(f, RequestField::Path(_)))
     }
 
     fn has_query_fields(&self) -> bool {
-        self.fields.iter().any(|f| matches!(f, RequestField::Query(_)))
+        self.fields
+            .iter()
+            .any(|f| matches!(f, RequestField::Query(_)))
     }
 
     fn has_lifetimes(&self) -> bool {
@@ -149,11 +173,16 @@ impl Request {
     }
 
     fn header_fields(&self) -> impl Iterator<Item = &RequestField> {
-        self.fields.iter().filter(|f| matches!(f, RequestField::Header(..)))
+        self.fields
+            .iter()
+            .filter(|f| matches!(f, RequestField::Header(..)))
     }
 
     fn path_field_count(&self) -> usize {
-        self.fields.iter().filter(|f| matches!(f, RequestField::Path(..))).count()
+        self.fields
+            .iter()
+            .filter(|f| matches!(f, RequestField::Path(..)))
+            .count()
     }
 
     fn raw_body_field(&self) -> Option<&Field> {
@@ -161,7 +190,9 @@ impl Request {
     }
 
     fn query_map_field(&self) -> Option<&Field> {
-        self.fields.iter().find_map(RequestField::as_query_map_field)
+        self.fields
+            .iter()
+            .find_map(RequestField::as_query_map_field)
     }
 
     fn expand_all(&self) -> TokenStream {
@@ -171,15 +202,19 @@ impl Request {
         let serde = quote! { #s3ers_api::exports::serde };
 
         let request_body_struct = self.has_body_fields().then(|| {
-            let serde_attr = self.has_newtype_body().then(|| quote! { #[serde(transparent)] });
-            let fields = self.fields.iter().filter_map(RequestField::as_body_field);
+            let serde_attr = self
+                .has_newtype_body()
+                .then(|| quote! { #[serde(transparent)] });
+            let fields =
+                self.fields.iter().filter_map(RequestField::as_body_field);
 
             // Though we don't track the difference between newtype body and body
             // for lifetimes, the outer check and the macro failing if it encounters
             // an illegal combination of field attributes, is enough to guarantee
             // `body_lifetimes` correctness.
             let lifetimes = &self.lifetimes.body;
-            let derive_deserialize = lifetimes.is_empty().then(|| quote! { #serde::Deserialize });
+            let derive_deserialize =
+                lifetimes.is_empty().then(|| quote! { #serde::Deserialize });
 
             quote! {
                 /// Data in the request body.
@@ -196,10 +231,15 @@ impl Request {
         });
 
         let request_query_def = if let Some(f) = self.query_map_field() {
-            let field = Field { ident: None, colon_token: None, ..f.clone() };
+            let field = Field {
+                ident: None,
+                colon_token: None,
+                ..f.clone()
+            };
             Some(quote! { (#field); })
         } else if self.has_query_fields() {
-            let fields = self.fields.iter().filter_map(RequestField::as_query_field);
+            let fields =
+                self.fields.iter().filter_map(RequestField::as_query_field);
             Some(quote! { { #(#fields),* } })
         } else {
             None
@@ -207,7 +247,8 @@ impl Request {
 
         let request_query_struct = request_query_def.map(|def| {
             let lifetimes = &self.lifetimes.query;
-            let derive_deserialize = lifetimes.is_empty().then(|| quote! { #serde::Deserialize });
+            let derive_deserialize =
+                lifetimes.is_empty().then(|| quote! { #serde::Deserialize });
 
             quote! {
                 /// Data in the request's query string.
@@ -238,7 +279,10 @@ impl Request {
         // TODO: highlight problematic fields
 
         let newtype_body_fields = self.fields.iter().filter(|field| {
-            matches!(field, RequestField::NewtypeBody(_) | RequestField::RawBody(_))
+            matches!(
+                field,
+                RequestField::NewtypeBody(_) | RequestField::RawBody(_)
+            )
         });
 
         let has_newtype_body_field = match newtype_body_fields.count() {
@@ -252,8 +296,10 @@ impl Request {
             }
         };
 
-        let query_map_fields =
-            self.fields.iter().filter(|f| matches!(f, RequestField::QueryMap(_)));
+        let query_map_fields = self
+            .fields
+            .iter()
+            .filter(|f| matches!(f, RequestField::QueryMap(_)));
         let has_query_map_field = match query_map_fields.count() {
             0 => false,
             1 => true,
@@ -265,8 +311,14 @@ impl Request {
             }
         };
 
-        let has_body_fields = self.fields.iter().any(|f| matches!(f, RequestField::Body(_)));
-        let has_query_fields = self.fields.iter().any(|f| matches!(f, RequestField::Query(_)));
+        let has_body_fields = self
+            .fields
+            .iter()
+            .any(|f| matches!(f, RequestField::Body(_)));
+        let has_query_fields = self
+            .fields
+            .iter()
+            .any(|f| matches!(f, RequestField::Query(_)));
 
         if has_newtype_body_field && has_body_fields {
             return Err(syn::Error::new_spanned(
@@ -327,12 +379,17 @@ enum RequestField {
 
 impl RequestField {
     /// Creates a new `RequestField`.
-    fn new(kind: RequestFieldKind, field: Field, header: Option<Ident>) -> Self {
+    fn new(
+        kind: RequestFieldKind,
+        field: Field,
+        header: Option<Ident>,
+    ) -> Self {
         match kind {
             RequestFieldKind::Body => RequestField::Body(field),
-            RequestFieldKind::Header => {
-                RequestField::Header(field, header.expect("missing header name"))
-            }
+            RequestFieldKind::Header => RequestField::Header(
+                field,
+                header.expect("missing header name"),
+            ),
             RequestFieldKind::NewtypeBody => RequestField::NewtypeBody(field),
             RequestFieldKind::RawBody => RequestField::RawBody(field),
             RequestFieldKind::Path => RequestField::Path(field),
@@ -344,7 +401,9 @@ impl RequestField {
     /// Return the contained field if this request field is a body kind.
     pub fn as_body_field(&self) -> Option<&Field> {
         match self {
-            RequestField::Body(field) | RequestField::NewtypeBody(field) => Some(field),
+            RequestField::Body(field) | RequestField::NewtypeBody(field) => {
+                Some(field)
+            }
             _ => None,
         }
     }
@@ -439,7 +498,11 @@ impl TryFrom<Field> for RequestField {
             });
         }
 
-        Ok(RequestField::new(field_kind.unwrap_or(RequestFieldKind::Body), field, header))
+        Ok(RequestField::new(
+            field_kind.unwrap_or(RequestFieldKind::Body),
+            field,
+            header,
+        ))
     }
 }
 

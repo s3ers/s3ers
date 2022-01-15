@@ -1,6 +1,8 @@
 use std::str;
 
-use form_urlencoded::{Serializer as UrlEncodedSerializer, Target as UrlEncodedTarget};
+use form_urlencoded::{
+    Serializer as UrlEncodedSerializer, Target as UrlEncodedTarget,
+};
 use serde::ser;
 
 use super::{
@@ -25,11 +27,16 @@ where
         urlencoder: &'target mut UrlEncodedSerializer<'input, Target>,
         key: &'key str,
     ) -> Self {
-        ValueSink { urlencoder, key, nested: false }
+        ValueSink {
+            urlencoder,
+            key,
+            nested: false,
+        }
     }
 }
 
-impl<'input, 'key, 'target, Target> Sink for ValueSink<'input, 'key, 'target, Target>
+impl<'input, 'key, 'target, Target> Sink
+    for ValueSink<'input, 'key, 'target, Target>
 where
     Target: 'target + UrlEncodedTarget,
 {
@@ -53,7 +60,10 @@ where
         Ok(())
     }
 
-    fn serialize_some<T: ?Sized + ser::Serialize>(self, value: &T) -> Result<Self::Ok, Error> {
+    fn serialize_some<T: ?Sized + ser::Serialize>(
+        self,
+        value: &T,
+    ) -> Result<Self::Ok, Error> {
         value.serialize(PartSerializer::new(self))
     }
 
@@ -70,14 +80,18 @@ where
     }
 }
 
-impl<'input, 'key, 'target, Target> ser::SerializeSeq for ValueSink<'input, 'key, 'target, Target>
+impl<'input, 'key, 'target, Target> ser::SerializeSeq
+    for ValueSink<'input, 'key, 'target, Target>
 where
     Target: 'target + UrlEncodedTarget,
 {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_element<T: ?Sized>(
+        &mut self,
+        value: &T,
+    ) -> Result<(), Self::Error>
     where
         T: ser::Serialize,
     {

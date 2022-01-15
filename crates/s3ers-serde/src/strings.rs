@@ -119,7 +119,9 @@ where
 ///
 /// To be used like this:
 /// `#[serde(deserialize_with = "btreemap_int_or_string_to_int_values")]`
-pub fn btreemap_int_or_string_to_int_values<'de, D, T>(de: D) -> Result<BTreeMap<T, Int>, D::Error>
+pub fn btreemap_int_or_string_to_int_values<'de, D, T>(
+    de: D,
+) -> Result<BTreeMap<T, Int>, D::Error>
 where
     D: Deserializer<'de>,
     T: Deserialize<'de> + Ord,
@@ -142,7 +144,9 @@ where
 
     impl<T> IntMapVisitor<T> {
         fn new() -> Self {
-            Self { _phantom: PhantomData }
+            Self {
+                _phantom: PhantomData,
+            }
         }
     }
 
@@ -156,7 +160,10 @@ where
             formatter.write_str("a map with integers or stings as values")
         }
 
-        fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+        fn visit_map<A: MapAccess<'de>>(
+            self,
+            mut map: A,
+        ) -> Result<Self::Value, A::Error> {
             let mut res = BTreeMap::new();
 
             while let Some((k, IntWrap(v))) = map.next_entry()? {

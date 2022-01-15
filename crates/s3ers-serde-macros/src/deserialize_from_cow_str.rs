@@ -3,7 +3,9 @@ use quote::quote;
 
 use crate::util::import_s3ers_serde;
 
-pub fn expand_deserialize_from_cow_str(ident: &Ident) -> syn::Result<TokenStream> {
+pub fn expand_deserialize_from_cow_str(
+    ident: &Ident,
+) -> syn::Result<TokenStream> {
     let s3ers_serde = import_s3ers_serde();
 
     Ok(quote! {

@@ -34,14 +34,18 @@ pub fn s3ers_api(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Request, attributes(s3ers_api))]
 pub fn derive_request(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_derive_request(input).unwrap_or_else(syn::Error::into_compile_error).into()
+    expand_derive_request(input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 /// Internal helper taking care of the response-specific parts of `s3ers_api!`.
 #[proc_macro_derive(Response, attributes(s3ers_api))]
 pub fn derive_response(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    expand_derive_response(input).unwrap_or_else(syn::Error::into_compile_error).into()
+    expand_derive_response(input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
 }
 
 /// A derive macro that generates no code, but registers the s3ers_api attribute so both

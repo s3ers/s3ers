@@ -25,7 +25,10 @@ pub fn get_rename_rule(input: &ItemEnum) -> syn::Result<RenameRule> {
         .attrs
         .iter()
         .filter(|attr| attr.path.is_ident("s3ers_enum"))
-        .map(|attr| attr.parse_args::<RenameAllAttr>().map(RenameAllAttr::into_inner))
+        .map(|attr| {
+            attr.parse_args::<RenameAllAttr>()
+                .map(RenameAllAttr::into_inner)
+        })
         .collect::<syn::Result<_>>()?;
 
     match rules.len() {
@@ -48,6 +51,9 @@ pub fn get_rename(input: &Variant) -> syn::Result<Option<LitStr>> {
 
     match renames.len() {
         0 | 1 => Ok(renames.into_iter().next()),
-        _ => Err(syn::Error::new(Span::call_site(), "found multiple s3ers_enum(rename) attributes")),
+        _ => Err(syn::Error::new(
+            Span::call_site(),
+            "found multiple s3ers_enum(rename) attributes",
+        )),
     }
 }

@@ -48,8 +48,12 @@ pub struct Metadata {
 fn set_field<T: ToTokens>(field: &mut Option<T>, value: T) -> syn::Result<()> {
     match field {
         Some(existing_value) => {
-            let mut error = syn::Error::new_spanned(value, "duplicate field assignment");
-            error.combine(syn::Error::new_spanned(existing_value, "first one here"));
+            let mut error =
+                syn::Error::new_spanned(value, "duplicate field assignment");
+            error.combine(syn::Error::new_spanned(
+                existing_value,
+                "first one here",
+            ));
             Err(error)
         }
         None => {
@@ -67,8 +71,8 @@ impl Parse for Metadata {
         let field_values;
         braced!(field_values in input);
 
-        let field_values =
-            field_values.parse_terminated::<FieldValue, Token![,]>(FieldValue::parse)?;
+        let field_values = field_values
+            .parse_terminated::<FieldValue, Token![,]>(FieldValue::parse)?;
 
         let mut description = None;
         let mut method = None;
@@ -88,11 +92,16 @@ impl Parse for Metadata {
             }
         }
 
-        let missing_field =
-            |name| syn::Error::new_spanned(metadata_kw, format!("missing field `{}`", name));
+        let missing_field = |name| {
+            syn::Error::new_spanned(
+                metadata_kw,
+                format!("missing field `{}`", name),
+            )
+        };
 
         Ok(Self {
-            description: description.ok_or_else(|| missing_field("description"))?,
+            description: description
+                .ok_or_else(|| missing_field("description"))?,
             method: method.ok_or_else(|| missing_field("method"))?,
             name: name.ok_or_else(|| missing_field("name"))?,
             path: path.ok_or_else(|| missing_field("path"))?,
@@ -176,7 +185,9 @@ impl Parse for FieldValue {
 
                 Self::Path(path)
             }
-            Field::Authentication => Self::Authentication(input.parse()?, attrs),
+            Field::Authentication => {
+                Self::Authentication(input.parse()?, attrs)
+            }
         })
     }
 }

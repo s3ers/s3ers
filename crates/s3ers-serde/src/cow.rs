@@ -26,7 +26,9 @@ impl<'de> Deserialize<'de> for MyCowStr<'de> {
 ///
 /// This will become unnecessary if Rust gains lifetime specialization at some point; see
 /// <https://github.com/serde-rs/serde/issues/1497#issuecomment-716246686>.
-pub fn deserialize_cow_str<'de, D>(deserializer: D) -> Result<Cow<'de, str>, D::Error>
+pub fn deserialize_cow_str<'de, D>(
+    deserializer: D,
+) -> Result<Cow<'de, str>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -38,7 +40,10 @@ struct CowStrVisitor;
 impl<'de> Visitor<'de> for CowStrVisitor {
     type Value = Cow<'de, str>;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn expecting(
+        &self,
+        formatter: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         formatter.write_str("a string")
     }
 
@@ -55,7 +60,9 @@ impl<'de> Visitor<'de> for CowStrVisitor {
     {
         match str::from_utf8(v) {
             Ok(s) => Ok(Cow::Borrowed(s)),
-            Err(_) => Err(de::Error::invalid_value(Unexpected::Bytes(v), &self)),
+            Err(_) => {
+                Err(de::Error::invalid_value(Unexpected::Bytes(v), &self))
+            }
         }
     }
 
@@ -79,7 +86,9 @@ impl<'de> Visitor<'de> for CowStrVisitor {
     {
         match str::from_utf8(v) {
             Ok(s) => Ok(Cow::Owned(s.to_owned())),
-            Err(_) => Err(de::Error::invalid_value(Unexpected::Bytes(v), &self)),
+            Err(_) => {
+                Err(de::Error::invalid_value(Unexpected::Bytes(v), &self))
+            }
         }
     }
 
@@ -89,7 +98,10 @@ impl<'de> Visitor<'de> for CowStrVisitor {
     {
         match String::from_utf8(v) {
             Ok(s) => Ok(Cow::Owned(s)),
-            Err(e) => Err(de::Error::invalid_value(Unexpected::Bytes(&e.into_bytes()), &self)),
+            Err(e) => Err(de::Error::invalid_value(
+                Unexpected::Bytes(&e.into_bytes()),
+                &self,
+            )),
         }
     }
 }

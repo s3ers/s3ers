@@ -7,9 +7,12 @@ use std::convert::TryFrom;
 use bytes::BufMut;
 use http::{header::CONTENT_TYPE, method::Method};
 use s3ers_api::{
-    error::{FromHttpRequestError, FromHttpResponseError, IntoHttpError, SError, ServerError},
-    AuthScheme, EndpointError, IncomingRequest, IncomingResponse, Metadata, OutgoingRequest,
-    OutgoingResponse,
+    error::{
+        FromHttpRequestError, FromHttpResponseError, IntoHttpError, SError,
+        ServerError,
+    },
+    AuthScheme, EndpointError, IncomingRequest, IncomingResponse, Metadata,
+    OutgoingRequest, OutgoingResponse,
 };
 use s3ers_serde::Outgoing;
 use serde::{Deserialize, Serialize};
@@ -17,7 +20,7 @@ use serde::{Deserialize, Serialize};
 /// A request to create a new room alias.
 #[derive(Debug)]
 pub struct Request {
-    pub room_id: Box<str>,         // body
+    pub room_id: Box<str>,    // body
     pub room_alias: Box<str>, // path
 }
 
@@ -46,7 +49,9 @@ impl OutgoingRequest for Request {
         let url = (base_url.to_owned() + METADATA.path)
             .replace(":room_alias", &self.room_alias.to_string());
 
-        let request_body = RequestBody { room_id: self.room_id };
+        let request_body = RequestBody {
+            room_id: self.room_id,
+        };
 
         let http_request = http::Request::builder()
             .method(METADATA.method)
@@ -69,17 +74,23 @@ impl IncomingRequest for Request {
     fn try_from_http_request<T: AsRef<[u8]>>(
         request: http::Request<T>,
     ) -> Result<Self, FromHttpRequestError> {
-        let path_segments: Vec<&str> = request.uri().path()[1..].split('/').collect();
+        let path_segments: Vec<&str> =
+            request.uri().path()[1..].split('/').collect();
         let room_alias = {
             let decoded =
-                percent_encoding::percent_decode(path_segments[5].as_bytes()).decode_utf8()?;
+                percent_encoding::percent_decode(path_segments[5].as_bytes())
+                    .decode_utf8()?;
 
             TryFrom::try_from(&*decoded)?
         };
 
-        let request_body: RequestBody = serde_json::from_slice(request.body().as_ref())?;
+        let request_body: RequestBody =
+            serde_json::from_slice(request.body().as_ref())?;
 
-        Ok(Request { room_id: request_body.room_id, room_alias })
+        Ok(Request {
+            room_id: request_body.room_id,
+            room_alias,
+        })
     }
 }
 
@@ -106,7 +117,9 @@ impl IncomingResponse for Response {
             Ok(Response)
         } else {
             Err(FromHttpResponseError::Http(ServerError::Known(
-                <SError as EndpointError>::try_from_http_response(http_response)?,
+                <SError as EndpointError>::try_from_http_response(
+                    http_response,
+                )?,
             )))
         }
     }
