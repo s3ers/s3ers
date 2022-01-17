@@ -25,6 +25,8 @@
       {
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
+            pkg-config openssl
+
             rust-bin.stable."1.58.0".default
             # rust-bin.nightly.latest.default
             cargo-audit
