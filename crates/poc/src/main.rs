@@ -1,10 +1,10 @@
+use anyhow::Result;
 use chrono::Utc;
+use hmac::{Hmac, Mac};
 use quick_xml::de::from_str;
 use reqwest;
 use serde::Deserialize;
-use anyhow::Result;
-use sha2::{Sha256, Digest};
-use hmac::{Hmac, Mac};
+use sha2::{Digest, Sha256};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -65,7 +65,6 @@ fn main() -> Result<()> {
     let result: ListBucketResult = from_str(&response)?;
     dbg!(result);
 
-
     let mut request = client.get(format!("{}/private", endpoint)).build()?;
     add_host_header(&mut request)?;
     add_amz_headers(&mut request)?;
@@ -80,7 +79,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-
 fn add_host_header(request: &mut reqwest::blocking::Request) -> Result<()> {
     let host = request.url().host_str().unwrap();
     let port = request.url().port_or_known_default().unwrap();
@@ -91,7 +89,8 @@ fn add_host_header(request: &mut reqwest::blocking::Request) -> Result<()> {
 }
 
 fn add_amz_headers(request: &mut reqwest::blocking::Request) -> Result<()> {
-    let x_amz_content_sha256 = reqwest::header::HeaderName::from_static("x-amz-content-sha256");
+    let x_amz_content_sha256 =
+        reqwest::header::HeaderName::from_static("x-amz-content-sha256");
     let content_sha256 = Sha256::digest(match request.body() {
         Some(body) => body.as_bytes().unwrap(),
         None => b"",
@@ -103,30 +102,49 @@ fn add_amz_headers(request: &mut reqwest::blocking::Request) -> Result<()> {
     let date = date.format("%Y%m%dT%H%M%SZ").to_string();
 
     let headers = request.headers_mut();
-    headers.insert(x_amz_content_sha256, reqwest::header::HeaderValue::from_str(content_sha256.as_str())?);
-    headers.insert(x_amz_date, reqwest::header::HeaderValue::from_str(date.as_str())?);
+    headers.insert(
+        x_amz_content_sha256,
+        reqwest::header::HeaderValue::from_str(content_sha256.as_str())?,
+    );
+    headers.insert(
+        x_amz_date,
+        reqwest::header::HeaderValue::from_str(date.as_str())?,
+    );
 
     Ok(())
 }
 
-fn sign_request(request: &mut reqwest::blocking::Request, creds: &Credentials) -> Result<()> {
+fn sign_request(
+    request: &mut reqwest::blocking::Request,
+    creds: &Credentials,
+) -> Result<()> {
     let mut canonical_request_query = String::new();
     // TODO: this will add an extra `&` at the beginning. find a better way to do this
     for (arg, value) in request.url().query_pairs() {
         canonical_request_query += format!("&{}={}", arg, value).as_str();
     }
 
-    let canonical_request_signed_headers = request.headers().iter().map(|(header, _)| header.as_str()).collect::<Vec<_>>().join(";");
+    let canonical_request_signed_headers = request
+        .headers()
+        .iter()
+        .map(|(header, _)| header.as_str())
+        .collect::<Vec<_>>()
+        .join(";");
 
     let mut canonical_request_headers = String::new();
     // TODO: sort this by header name
     // TODO: only get Host, Content-Type, and x-amz-* headers
     for (header, value) in request.headers().iter() {
         // TODO: trim value
-        canonical_request_headers += format!("{}:{}\n", header, value.to_str()?).as_str();
+        canonical_request_headers +=
+            format!("{}:{}\n", header, value.to_str()?).as_str();
     }
 
-    let canonical_request_hashed_payload = request.headers().get("x-amz-content-sha256").unwrap().to_str()?;
+    let canonical_request_hashed_payload = request
+        .headers()
+        .get("x-amz-content-sha256")
+        .unwrap()
+        .to_str()?;
 
     let canonical_request = format!(
         "{}\n{}\n{}\n{}\n{}\n{}",
@@ -162,8 +180,9 @@ fn sign_request(request: &mut reqwest::blocking::Request, creds: &Credentials) -
     );
     dbg!(&string_to_sign);
 
-
-    let mut date_key = HmacSha256::new_from_slice(format!("AWS4{}", creds.secret_key).as_bytes())?;
+    let mut date_key = HmacSha256::new_from_slice(
+        format!("AWS4{}", creds.secret_key).as_bytes(),
+    )?;
     date_key.update(&date.as_bytes());
     let date_key = date_key.finalize().into_bytes();
 
@@ -171,11 +190,14 @@ fn sign_request(request: &mut reqwest::blocking::Request, creds: &Credentials) -
     date_region_key.update(&region.as_bytes());
     let date_region_key = date_region_key.finalize().into_bytes();
 
-    let mut date_region_service_key = HmacSha256::new_from_slice(&date_region_key[..])?;
+    let mut date_region_service_key =
+        HmacSha256::new_from_slice(&date_region_key[..])?;
     date_region_service_key.update(&service.as_bytes());
-    let date_region_service_key = date_region_service_key.finalize().into_bytes();
+    let date_region_service_key =
+        date_region_service_key.finalize().into_bytes();
 
-    let mut signing_key = HmacSha256::new_from_slice(&date_region_service_key[..])?;
+    let mut signing_key =
+        HmacSha256::new_from_slice(&date_region_service_key[..])?;
     signing_key.update(&aws4_request.as_bytes());
     let signing_key = signing_key.finalize().into_bytes();
 
@@ -200,7 +222,10 @@ fn sign_request(request: &mut reqwest::blocking::Request, creds: &Credentials) -
     dbg!(&authorization);
 
     let headers = request.headers_mut();
-    headers.insert(reqwest::header::AUTHORIZATION, reqwest::header::HeaderValue::from_str(authorization.as_str())?);
+    headers.insert(
+        reqwest::header::AUTHORIZATION,
+        reqwest::header::HeaderValue::from_str(authorization.as_str())?,
+    );
 
     Ok(())
 }
